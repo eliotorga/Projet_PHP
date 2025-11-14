@@ -1,0 +1,18 @@
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Éditeurs
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Cache
+cache/
+tmp/
+
+# Composer
+vendor/
+composer.lock
