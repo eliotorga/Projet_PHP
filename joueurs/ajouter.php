@@ -32,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     Commentaire : <br>
     <textarea name="commentaire"></textarea><br>
     <button type="submit">Enregistrer</button>
+    neuille
 </form>
 </body>
 
