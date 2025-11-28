@@ -5,7 +5,7 @@ require_once __DIR__ . '/lib/auth.php';
 
 // Identifiants définis par ton prof (en dur)
 $LOGIN = "admin";
-$PASSWORD_HASH = '$2y$10$2DaFhKz3YpG8DZb0cPVH7uF0zoVZ2J0f6Qr6vF00Y8SkIjr/xBrOm'; 
+$PASSWORD_HASH = '$2y$10$3mOmiZT9/YKntPaDTm/OYeu317JQ/Z/7JUhu1xfgB7pXqWCxz9TMW'; 
 // = le hash du mot de passe : 1234
 
 $error = "";

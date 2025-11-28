@@ -1,18 +1,19 @@
 <?php
+session_start();
 require_once __DIR__ . '/../lib/auth.php';
 require_login();
 require_once __DIR__ . '/../lib/joueur.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     add_joueur($_POST);
-    header('Location: liste.php');
+    header("Location: liste.php");
     exit;
 }
+
+include "../header.php";
+include "../menu.php";
 ?>
-<!DOCTYPE html>
-<html lang="fr">
-<head><meta charset="UTF-8"><title>Ajouter joueur</title></head>
-<body>
+
 <h1>Ajouter un joueur</h1>
 
 <form method="post">
@@ -29,10 +30,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <option value="Suspendu">Suspendu</option>
         <option value="Absent">Absent</option>
     </select><br>
-    Commentaire : <br>
+    
+    Commentaire :<br>
     <textarea name="commentaire"></textarea><br>
-    <button type="submit">Enregistrer</button>
-</form>
-</body>
 
-</html>
+    <button type="submit" class="btn">Ajouter</button>
+</form>
+
+<?php include "../footer.php"; ?>
