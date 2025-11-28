@@ -3,6 +3,10 @@ require_once __DIR__ . '/../lib/auth.php';
 require_login();
 require_once __DIR__ . '/../lib/joueur.php';
 
+include "../header.php";
+include "../menu.php";
+require_once "../lib/joueur.php";
+
 $joueurs = get_all_joueurs();
 ?>
 <!DOCTYPE html>
