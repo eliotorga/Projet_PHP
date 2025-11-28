@@ -15,7 +15,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
 <h1>Ajouter un joueur</h1>
 
-
 <form method="post">
     Nom : <input type="text" name="nom" required><br>
     Prénom : <input type="text" name="prenom" required><br>
@@ -33,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     Commentaire : <br>
     <textarea name="commentaire"></textarea><br>
     <button type="submit">Enregistrer</button>
+    william 
 </form>
 </body>
 </html>
