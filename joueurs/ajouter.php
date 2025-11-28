@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head><meta charset="UTF-8"><title>Ajouter joueur</title></head>
 <body>
 <h1>Ajouter un joueur</h1>
-testwilli
+
 <form method="post">
     Nom : <input type="text" name="nom" required><br>
     Prénom : <input type="text" name="prenom" required><br>
@@ -34,5 +34,5 @@ testwilli
     <button type="submit">Enregistrer</button>
 </form>
 </body>
-etst
+
 </html>
