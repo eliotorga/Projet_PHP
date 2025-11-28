@@ -1,9 +1,12 @@
 <?php
+// NE PAS mettre session_start() ici
 
-session_start();
+function is_logged(): bool {
+    return !empty($_SESSION['logged']) && $_SESSION['logged'] === true;
+}
 
-function require_login() {
-    if (!isset($_SESSION['logged']) || $_SESSION['logged'] !== true) {
+function require_login(): void {
+    if (!is_logged()) {
         header("Location: /PROJET_PHP/index.php");
         exit;
     }
