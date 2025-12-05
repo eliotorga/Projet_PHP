@@ -1,3 +1,7 @@
+-- Créer la base et l'utiliser
+CREATE DATABASE IF NOT EXISTS projet_PHP;
+USE projet_equipe;
+
 -- ============================================
 -- TABLE JOUEUR
 -- ============================================
@@ -17,15 +21,15 @@ CREATE TABLE joueur (
 
 
 -- ============================================
--- TABLE MATCH
+-- TABLE MATCHS (nom corrigé car match est un mot réservé)
 -- ============================================
 
-CREATE TABLE match (
+CREATE TABLE matchs (
     id_match INT AUTO_INCREMENT PRIMARY KEY,
     date_heure DATETIME NOT NULL,
     equipe_adverse VARCHAR(100) NOT NULL,
     lieu VARCHAR(100),
-    resultat VARCHAR(20)  -- Gagné / Perdu / Nul
+    resultat VARCHAR(20)
 ) ENGINE=InnoDB;
 
 
@@ -36,9 +40,9 @@ CREATE TABLE match (
 CREATE TABLE participer (
     id_joueur INT NOT NULL,
     id_match INT NOT NULL,
-    titularisation BOOLEAN NOT NULL,   -- true = titulaire, false = remplaçant
-    note DECIMAL(3,1),                 -- note de l'entraîneur
-    nom_poste VARCHAR(100),            -- poste joué dans ce match
+    titularisation BOOLEAN NOT NULL,
+    note DECIMAL(3,1),
+    nom_poste VARCHAR(100),
 
     PRIMARY KEY(id_joueur, id_match),
 
@@ -47,7 +51,7 @@ CREATE TABLE participer (
         ON DELETE CASCADE,
 
     CONSTRAINT fk_participer_match
-        FOREIGN KEY (id_match) REFERENCES match(id_match)
+        FOREIGN KEY (id_match) REFERENCES matchs(id_match)
         ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
