@@ -5,7 +5,7 @@ require_login();
 
 require_once __DIR__ . '/../lib/joueur.php';
 
-// INCLUSIONS HTML
+// INCLUSIONS HTM
 include "../header.php";
 include "../menu.php";
 
