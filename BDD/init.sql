@@ -1,54 +1,85 @@
--- Création de la base de données
-CREATE DATABASE IF NOT EXISTS gestion_equipe;
-USE gestion_equipe;
+-- ===========================================================
+--  BASE DE DONNÉES : Gestion Sportive
+--  Conforme au MCD fourni + corrections
+-- ===========================================================
 
--- Table utilisateurs
-CREATE TABLE utilisateurs (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+CREATE DATABASE IF NOT EXISTS gestion_sportive
+  DEFAULT CHARACTER SET utf8mb4
+  DEFAULT COLLATE utf8mb4_general_ci;
 
--- Table joueurs
-CREATE TABLE joueurs (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    prenom VARCHAR(50) NOT NULL,
-    nom VARCHAR(50) NOT NULL,
+USE gestion_sportive;
+
+-- ===========================================================
+-- TABLE : JOUEUR
+-- ===========================================================
+
+CREATE TABLE joueur (
+    id_joueur INT AUTO_INCREMENT PRIMARY KEY,
+    nom VARCHAR(100) NOT NULL,
+    prenom VARCHAR(100) NOT NULL,
+    num_licence VARCHAR(50) UNIQUE,
+    poids_kg DECIMAL(5,2),
     date_naissance DATE,
-    taille INT,
-    poids DECIMAL(5,2),
-    poste_prefere VARCHAR(20),
-    est_actif BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+    taille_cm SMALLINT UNSIGNED,
+    statut ENUM('actif', 'inactif') DEFAULT 'actif',
+    numero_joueur INT,
+    poste_favori VARCHAR(50)
+) ENGINE=InnoDB;
 
--- Table matchs
-CREATE TABLE matchs (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    adversaire VARCHAR(100) NOT NULL,
-    date_match DATETIME NOT NULL,
+-- ===========================================================
+-- TABLE : MATCH
+-- ===========================================================
+
+CREATE TABLE match_sportif (
+    id_match INT AUTO_INCREMENT PRIMARY KEY,
+    date_heure DATETIME NOT NULL,
+    equipe_adverse VARCHAR(100) NOT NULL,
     lieu VARCHAR(100),
-    resultat ENUM('victoire', 'defaite', 'nul') DEFAULT NULL,
-    score_equipe INT,
-    score_adversaire INT,
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+    resultat ENUM('gagne', 'perdu', 'nul') DEFAULT NULL
+) ENGINE=InnoDB;
 
--- Table compositions (joueurs par match)
-CREATE TABLE compositions (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    match_id INT,
-    joueur_id INT,
-    poste VARCHAR(20),
-    est_titulaire BOOLEAN DEFAULT TRUE,
-    evaluation INT,
-    commentaires TEXT,
-    FOREIGN KEY (match_id) REFERENCES matchs(id) ON DELETE CASCADE,
-    FOREIGN KEY (joueur_id) REFERENCES joueurs(id) ON DELETE CASCADE
-);
+-- ===========================================================
+-- TABLE : PARTICIPER (Feuille de match)
+-- ===========================================================
+-- Clé primaire = (id_match, id_joueur)
+-- ===========================================================
 
--- Insertion d'un utilisateur admin (mot de passe: admin123)
-INSERT INTO utilisateurs (username, password_hash) 
-VALUES ('admin', '$2y$10$Vq5z5qYq5z5qYq5z5qYq5u1w2e3r4t5y6u7i8o9p0');
+CREATE TABLE participer (
+    id_match INT NOT NULL,
+    id_joueur INT NOT NULL,
+    titularisation TINYINT(1) NOT NULL,   -- 1 = titulaire / 0 = remplaçant
+    note TINYINT UNSIGNED DEFAULT NULL,   -- note individuelle (0-10)
+    poste_terrain VARCHAR(50) NOT NULL,
+
+    PRIMARY KEY (id_match, id_joueur),
+
+    CONSTRAINT fk_participer_match
+        FOREIGN KEY (id_match) REFERENCES match_sportif(id_match)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_participer_joueur
+        FOREIGN KEY (id_joueur) REFERENCES joueur(id_joueur)
+        ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+-- Index utiles pour statistiques
+CREATE INDEX idx_participer_joueur ON participer(id_joueur);
+CREATE INDEX idx_participer_match ON participer(id_match);
+
+-- ===========================================================
+-- TABLE : COMMENTAIRE_JOUEUR
+-- ===========================================================
+
+CREATE TABLE commentaire_joueur (
+    id_commentaire INT AUTO_INCREMENT PRIMARY KEY,
+    id_joueur INT NOT NULL,
+    texte TEXT NOT NULL,
+    date_commentaire DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_commentaire_joueur
+        FOREIGN KEY (id_joueur) REFERENCES joueur(id_joueur)
+        ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Index utile
+CREATE INDEX idx_commentaire_joueur ON commentaire_joueur(id_joueur);
