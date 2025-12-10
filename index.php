@@ -1,51 +1,5 @@
-<?php
-session_start();
+<?php include("includes/header.php"); ?>
 
-require_once __DIR__ . '/lib/auth.php';
+<h1>Bienvenue dans l'application de gestion sportive</h1>
 
-// Identifiants définis par ton prof (en dur)
-$LOGIN = "admin";
-$PASSWORD_HASH = '$2y$10$3mOmiZT9/YKntPaDTm/OYeu317JQ/Z/7JUhu1xfgB7pXqWCxz9TMW'; 
-// = le hash du mot de passe : 1234
-
-$error = "";
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $login = $_POST['login'] ?? '';
-    $password = $_POST['password'] ?? '';
-
-    if ($login === $LOGIN && password_verify($password, $PASSWORD_HASH)) {
-        $_SESSION['logged'] = true;
-        header("Location: menu.php");
-        exit;
-    } else {
-        $error = "Identifiants incorrects.";
-    }
-}
-?>
-
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Connexion</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-<div class="container">
-
-<h1>Connexion</h1>
-
-<?php if ($error): ?>
-    <p style="color:red;"><?= $error ?></p>
-<?php endif; ?>
-
-<form method="post">
-    Login : <input type="text" name="login"><br>
-    Mot de passe : <input type="password" name="password"><br>
-    <button type="submit">Se connecter</button>
-</form>
-
-</div>
-</body>
-</html>
+<?php include("includes/footer.php"); ?>
