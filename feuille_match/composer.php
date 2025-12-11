@@ -2,177 +2,184 @@
 require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";
 
-require_once __DIR__ . "/../bdd/db_match.php";
 require_once __DIR__ . "/../bdd/db_joueur.php";
 require_once __DIR__ . "/../bdd/db_participation.php";
+require_once __DIR__ . "/../bdd/db_match.php";
+require_once __DIR__ . "/../bdd/db_poste.php";
+require_once __DIR__ . "/../bdd/db_statut.php";
 
-include __DIR__ . "/../includes/header.php";
+// --- Récupération des matchs à venir (A_PREPARER) ---
+$matchsAvenir = getUpcomingMatches($gestion_sportive);
 
-// Vérification de l'ID du match
-if (!isset($_GET["id"])) {
-    die("<p style='color:red; font-weight:bold;'>ID match manquant.</p>");
-}
+$successMessage = "";
+$errorMessage = "";
 
-$id_match = intval($_GET["id"]);
-$match = getMatchById($gestion_sportive, $id_match);
+// Si un match est sélectionné dans l’URL
+$id_match = $_GET["id_match"] ?? null;
 
-if (!$match) {
-    die("<p style='color:red; font-weight:bold;'>Match introuvable.</p>");
-}
-
-$joueurs_actifs = getActivePlayers($gestion_sportive);
-$postes = getAllPostes($gestion_sportive);
-
-// Récupérer participation existante (si modification)
-$participation_existante = getParticipationByMatch($gestion_sportive, $id_match);
-
-$error = "";
-
-// Soumission du formulaire
+// Lorsqu’on soumet la feuille de match
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
-    $titulaires    = $_POST["titulaires"] ?? [];
-    $postesChoisis = $_POST["poste"] ?? [];
-    $remplacants   = $_POST["remplacants"] ?? [];
+    $id_match = intval($_POST["id_match"] ?? 0);
+    $roles = $_POST["role"] ?? [];
+    $postes = $_POST["poste"] ?? [];
 
-    // ⚠️ Contrôle : au moins un titulaire
-    if (count($titulaires) === 0) {
-        $error = "Vous devez sélectionner au moins un titulaire.";
-    } else {
+    // Validation : 11 titulaires + max 7 remplaçants
+    $nbTitulaires = 0;
+    $nbRemplacants = 0;
 
-        // ⚠️ Contrôle : pas de doublons entre titulaires et remplaçants
-        $doublons = array_intersect($titulaires, $remplacants);
-        if (!empty($doublons)) {
-            $error = "Un joueur ne peut pas être à la fois titulaire et remplaçant.";
-        } else {
+    foreach ($roles as $id_joueur => $role) {
+        if ($role === "TITULAIRE") $nbTitulaires++;
+        if ($role === "REMPLACANT") $nbRemplacants++;
+    }
 
-            // ⚠️ On vide d'abord l'ancienne composition
-            clearParticipation($gestion_sportive, $id_match);
+    if ($nbTitulaires !== 11) {
+        $errorMessage = "❌ Vous devez sélectionner exactement 11 titulaires. ($nbTitulaires sélectionnés)";
+    }
+    elseif ($nbRemplacants > 7) {
+        $errorMessage = "❌ Maximum 7 remplaçants autorisés. ($nbRemplacants sélectionnés)";
+    } 
+    else {
+        // Validation OK → on enregistre
+        deleteParticipationForMatch($gestion_sportive, $id_match);
 
-            // Enregistrement des titulaires
-            foreach ($titulaires as $id_joueur) {
-                $id_poste = $postesChoisis[$id_joueur] ?? null;
-                addParticipation($gestion_sportive, $id_match, $id_joueur, "TITULAIRE", $id_poste);
-            }
+        foreach ($roles as $id_joueur => $role) {
+            if ($role === "NONE") continue;
 
-            // Enregistrement des remplaçants
-            foreach ($remplacants as $id_joueur) {
-                addParticipation($gestion_sportive, $id_match, $id_joueur, "REMPLACANT", null);
-            }
-
-            // Match passe en état PREPARE
-            updateMatch($gestion_sportive, $id_match, [
-                "date_heure" => $match["date_heure"],
-                "adversaire" => $match["adversaire"],
-                "lieu"       => $match["lieu"],
-                "etat"       => "PREPARE"
-            ]);
-
-            header("Location: ../matchs/liste_matchs.php");
-            exit;
+            $poste = $postes[$id_joueur] ?? null;
+            insertParticipation($gestion_sportive, $id_match, $id_joueur, $poste, $role);
         }
+
+        updateMatchEtat($gestion_sportive, $id_match, "PREPARE");
+
+        $successMessage = "✔ Feuille de match sauvegardée avec succès !";
     }
 }
+
+// Si un match est choisi, charger les joueurs actifs
+$joueursActifs = [];
+$commentaires = [];
+$evaluations = [];
+$postes = getAllPostes($gestion_sportive);
+
+if ($id_match) {
+    $joueursActifs = getActivePlayers($gestion_sportive);
+}
+
+include __DIR__ . "/../includes/header.php";
 ?>
 
-<div class="container">
 
-    <h1>📝 Composer la feuille de match</h1>
+<h1>📝 Composer la feuille de match</h1>
 
-    <p>
-        <strong><?= date("d/m/Y H:i", strtotime($match["date_heure"])) ?></strong><br>
-        Adversaire : <strong><?= htmlspecialchars($match["adversaire"]) ?></strong><br>
-        Lieu : <?= htmlspecialchars($match["lieu"]) ?><br>
-    </p>
+<!-- Sélecteur de match -->
+<form method="GET" action="">
+    <label for="id_match">Match à préparer :</label>
+    <select name="id_match" onchange="this.form.submit()" required>
+        <option value="">-- Sélectionner un match --</option>
+        <?php foreach ($matchsAvenir as $m): ?>
+            <option value="<?= $m['id_match'] ?>" 
+                <?= ($id_match == $m['id_match']) ? "selected" : "" ?>>
+                <?= htmlspecialchars($m['adversaire']) ?> 
+                (<?= $m['date_heure'] ?>)
+            </option>
+        <?php endforeach; ?>
+    </select>
+</form>
 
-    <?php if ($error): ?>
-        <p style="color:red; font-weight:bold;"><?= htmlspecialchars($error) ?></p>
-    <?php endif; ?>
+<hr><br>
 
-    <form method="POST">
+<?php if ($id_match && empty($joueursActifs)): ?>
+    <p>Aucun joueur actif disponible.</p>
+<?php endif; ?>
 
-        <h2>🏆 Titulaires (sélection + poste)</h2>
+<?php if ($errorMessage): ?>
+    <p style="color: red; font-weight: bold;"><?= $errorMessage ?></p>
+<?php endif; ?>
 
-        <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse;">
-            <tr style="background:#ddd;">
-                <th>Choisir</th>
-                <th>Joueur</th>
-                <th>Poste</th>
-            </tr>
+<?php if ($successMessage): ?>
+    <p style="color: green; font-weight: bold;"><?= $successMessage ?></p>
+<?php endif; ?>
 
-            <?php foreach ($joueurs_actifs as $j): ?>
-                <tr>
-                    <td>
-                        <input 
-                            type="checkbox" 
-                            name="titulaires[]" 
-                            value="<?= $j["id_joueur"] ?>"
-                            <?= isset($participation_existante[$j["id_joueur"]]) && $participation_existante[$j["id_joueur"]]["role"] === "TITULAIRE" ? "checked" : "" ?>
-                        >
-                    </td>
 
-                    <td><?= htmlspecialchars($j["prenom"] . " " . $j["nom"]) ?></td>
+<?php if ($id_match && $joueursActifs): ?>
 
-                    <td>
-                        <select name="poste[<?= $j["id_joueur"] ?>]">
-                            <option value="">-- poste --</option>
-                            <?php foreach ($postes as $p): ?>
-                                <option value="<?= $p["id_poste"] ?>">
-                                    <?= htmlspecialchars($p["libelle"]) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
+<form method="POST" action="">
+    <input type="hidden" name="id_match" value="<?= $id_match ?>">
 
-        </table>
+    <!-- Compteurs -->
+    <div style="margin-bottom: 15px; font-size: 18px;">
+        <strong>Titulaires requis :</strong> 11  
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        <strong>Remplaçants max :</strong> 7
+    </div>
 
-        <br>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
 
-        <h2>🔄 Remplaçants</h2>
+        <?php foreach ($joueursActifs as $j): ?>
 
-        <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse;">
-            <tr style="background:#ddd;">
-                <th>Choisir</th>
-                <th>Joueur</th>
-            </tr>
+        <div style="
+            border: 1px solid #ccc; 
+            padding: 15px; 
+            border-radius: 10px;
+            background: #f9f9f9;
+        ">
+            <h3><?= htmlspecialchars($j["prenom"] . " " . $j["nom"]) ?></h3>
 
-            <?php foreach ($joueurs_actifs as $j): ?>
-                <tr>
-                    <td>
-                        <input 
-                            type="checkbox" 
-                            name="remplacants[]" 
-                            value="<?= $j["id_joueur"] ?>"
-                            <?= isset($participation_existante[$j["id_joueur"]]) && $participation_existante[$j["id_joueur"]]["role"] === "REMPLACANT" ? "checked" : "" ?>
-                        >
-                    </td>
+            <p>📏 <?= $j["taille_cm"] ?> cm — ⚖ <?= $j["poids_kg"] ?> kg</p>
 
-                    <td><?= htmlspecialchars($j["prenom"]) . " " . htmlspecialchars($j["nom"]) ?></td>
-                </tr>
-            <?php endforeach; ?>
+            <p><strong>Derniers commentaires :</strong></p>
+            <ul style="font-size: 14px;">
+                <?php 
+                    $coms = getCommentsByPlayer($gestion_sportive, $j["id_joueur"]);
+                    if (empty($coms)) echo "<li>Aucun commentaire</li>";
+                    else {
+                        foreach ($coms as $c)
+                            echo "<li>" . htmlspecialchars($c['texte']) . "</li>";
+                    }
+                ?>
+            </ul>
 
-        </table>
+            <p><strong>Moyenne évaluations :</strong>
+                <?php 
+                    $avg = getAverageEvaluation($gestion_sportive, $j["id_joueur"]);
+                    echo $avg ? number_format($avg, 2) . "/5" : "Aucune note";
+                ?>
+            </p>
 
-        <br><br>
+            <hr>
 
-        <button 
-            type="submit"
-            style="
-                padding:10px 18px; 
-                background:#28a745; 
-                color:white;
-                border:none;
-                border-radius:6px;
-                cursor:pointer;
-            "
-        >
-            💾 Enregistrer la feuille de match
-        </button>
+            <!-- Sélection rôle -->
+            <label>Rôle :</label><br>
+            <select name="role[<?= $j['id_joueur'] ?>]" required>
+                <option value="NONE">-- Aucun --</option>
+                <option value="TITULAIRE">Titulaire</option>
+                <option value="REMPLACANT">Remplaçant</option>
+            </select>
 
-    </form>
+            <!-- Sélection poste -->
+            <label>Poste :</label><br>
+            <select name="poste[<?= $j['id_joueur'] ?>]" required>
+                <?php foreach ($postes as $p): ?>
+                    <option value="<?= $p['id_poste'] ?>">
+                        <?= htmlspecialchars($p['libelle']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
 
-</div>
+        <?php endforeach; ?>
+
+    </div>
+
+    <br><br>
+    <button type="submit" style="padding: 10px 25px; font-size: 18px;">
+        💾 Enregistrer la feuille de match
+    </button>
+
+</form>
+
+<?php endif; ?>
+
 
 <?php include __DIR__ . "/../includes/footer.php"; ?>
