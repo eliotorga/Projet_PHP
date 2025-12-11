@@ -1,0 +1,55 @@
+<?php
+/***************************************************
+ * CONFIGURATION GÉNÉRALE
+ * Connexion PDO + Identifiants de l'entraîneur
+ * Aucun mot de passe stocké en clair dans la BD
+ ***************************************************/
+
+
+/* ---------------------------
+   IDENTIFIANTS DE CONNEXION
+   (exigence du professeur : PAS DE TABLE utilisateur)
+----------------------------*/
+
+$AUTH_LOGIN = "admin";  // Nom d'utilisateur
+// Mot de passe = "admin" HASHÉ (à changer ensuite)
+$AUTH_HASH = password_hash("admin", PASSWORD_DEFAULT);
+
+
+/* ---------------------------
+   PARAMÈTRES BASE DE DONNÉES
+----------------------------*/
+
+$DB_HOST = "localhost";
+$DB_NAME = "gestion_equipe";
+$DB_USER = "root";
+$DB_PASS = "";  // sous XAMPP / WAMP, souvent vide
+
+
+/* ---------------------------
+   CONNEXION PDO SÉCURISÉE
+----------------------------*/
+
+try {
+    $gestion_sportive = new PDO(
+        "mysql:host={$DB_HOST};dbname={$DB_NAME};charset=utf8",
+        $DB_USER,
+        $DB_PASS,
+        [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,        // Exceptions sur erreurs
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,   // Résultats en tableau associatif
+            PDO::ATTR_EMULATE_PREPARES => false                // Prépare réellement côté MySQL (anti-injection)
+        ]
+    );
+} catch (PDOException $e) {
+    die("❌ Erreur de connexion à la base de données : " . $e->getMessage());
+}
+
+
+/* ---------------------------
+   SÉCURITÉ SESSION
+----------------------------*/
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
