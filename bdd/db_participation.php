@@ -8,14 +8,6 @@
 require_once __DIR__ . "/../includes/config.php";
 
 
-/****************************************
- * 1) RÉCUPÉRATION DES POSTES
- ****************************************/
-
-function getAllPostes(PDO $db) {
-    $sql = "SELECT * FROM poste ORDER BY libelle";
-    return $db->query($sql)->fetchAll();
-}
 
 
 

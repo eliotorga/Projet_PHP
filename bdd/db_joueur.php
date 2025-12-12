@@ -147,5 +147,47 @@ function getAvgEvaluation(PDO $db, int $id_joueur) {
     $stmt->execute([$id_joueur]);
     return $stmt->fetch()["moyenne"];
 }
+// Récupère infos avancées pour la feuille de match
+function getPlayerExtraInfo(PDO $db, int $id_joueur) {
+    
+    // Moyenne des évaluations
+    $stmt = $db->prepare("
+        SELECT AVG(evaluation) AS moyenne
+        FROM participation
+        WHERE id_joueur = ? AND evaluation IS NOT NULL
+    ");
+    $stmt->execute([$id_joueur]);
+    $moyenne = $stmt->fetch()["moyenne"];
+
+    // 5 dernières évaluations
+    $stmt = $db->prepare("
+        SELECT p.evaluation, m.date_heure
+        FROM participation p
+        JOIN matchs m ON m.id_match = p.id_match
+        WHERE p.id_joueur = ? AND p.evaluation IS NOT NULL
+        ORDER BY m.date_heure DESC
+        LIMIT 5
+    ");
+    $stmt->execute([$id_joueur]);
+    $evaluations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Commentaires (si table existe)
+    $stmt = $db->prepare("
+        SELECT commentaire, date_commentaire
+        FROM joueur_commentaire
+        WHERE id_joueur = ?
+        ORDER BY date_commentaire DESC
+        LIMIT 3
+    ");
+    $stmt->execute([$id_joueur]);
+    $commentaires = $stmt->fetchAll();
+
+    return [
+        "moyenne" => $moyenne ? round($moyenne, 2) : null,
+        "evaluations" => $evaluations,
+        "commentaires" => $commentaires
+    ];
+}
+
 
 ?>

@@ -2,125 +2,128 @@
 session_start();
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
+require_once "../bdd/db_participation.php";
+require_once "../bdd/db_joueur.php";
+require_once "../bdd/db_poste.php";
 
-if (!isset($_GET["id_match"])) {
-    die("Match non spécifié.");
-}
-
+// Vérification ID
+if (!isset($_GET["id_match"])) die("Match non spécifié.");
 $id_match = intval($_GET["id_match"]);
 
-// Charger les informations du match
-$req = $gestion_sportive->prepare("SELECT * FROM matchs WHERE id_match = ?");
-$req->execute([$id_match]);
-$match = $req->fetch();
+// Récup match
+$stmt = $gestion_sportive->prepare("SELECT * FROM matchs WHERE id_match = ?");
+$stmt->execute([$id_match]);
+$match = $stmt->fetch();
 
-if (!$match) {
-    die("Match introuvable.");
-}
+if (!$match) die("Match introuvable.");
 
-// Vérifier s’il existe déjà une composition
-$reqCompo = $gestion_sportive->prepare("
-    SELECT p.*, j.nom, j.prenom, j.taille, j.poids,
-           (SELECT ROUND(AVG(evaluation),1)
-            FROM participer pp 
-            WHERE pp.id_joueur = j.id_joueur AND pp.evaluation IS NOT NULL)
-            AS moyenne
-    FROM participer p
-    INNER JOIN joueurs j ON j.id_joueur = p.id_joueur
-    WHERE p.id_match = ?
-    ORDER BY p.titulaire DESC, j.nom ASC
-");
-$reqCompo->execute([$id_match]);
-$composition = $reqCompo->fetchAll(PDO::FETCH_ASSOC);
+// Récup composition
+$compo = getParticipationByMatch($gestion_sportive, $id_match);
 
-$hasCompo = count($composition) > 0;
-
-// Vérifier si le match est passé
-$matchPasse = ($match["date_heure"] < date("Y-m-d H:i:s"));
+// Récup postes pour affichage trié
+$postes = getAllPostes($gestion_sportive);
 
 include "../includes/header.php";
-include "../includes/menu.php";
 ?>
 
 <h2>Modifier le match : <?= htmlspecialchars($match["equipe_adverse"]) ?></h2>
 
 <p><strong>Date :</strong> <?= date("d/m/Y H:i", strtotime($match["date_heure"])) ?></p>
 <p><strong>Lieu :</strong> <?= htmlspecialchars($match["lieu"]) ?></p>
+<p><strong>Résultat :</strong> <?= $match["resultat"] ?: "<i>Non renseigné</i>" ?></p>
 
 <hr>
 
-<?php if (!$hasCompo): ?>
+<h3>Composition actuelle</h3>
 
-    <h3>Aucune composition enregistrée</h3>
-
-    <?php if (!$matchPasse): ?>
-        <a href="../feuille_match/composition.php?id_match=<?= $id_match ?>" class="btn">
-            ➕ Créer la feuille de match
-        </a>
-    <?php else: ?>
-        <p style="color:red">Ce match est déjà passé, impossible de créer une composition.</p>
-    <?php endif; ?>
-
+<?php if (count($compo) == 0): ?>
+    <p style="color:red;">Aucune composition enregistrée pour ce match.</p>
 <?php else: ?>
 
-    <h3>Composition enregistrée</h3>
+    <h4>Titulaires</h4>
+    <table border="1" cellpadding="8" width="100%">
+        <tr>
+            <th>Poste</th>
+            <th>Joueur</th>
+            <th>Taille / Poids</th>
+            <th>Rôle</th>
+            <th>Dernière note</th>
+        </tr>
 
-    <?php if (!$matchPasse): ?>
-        <a href="../feuille_match/composition.php?id_match=<?= $id_match ?>" class="btn">
-            ✏️ Modifier la composition
-        </a>
-    <?php endif; ?>
+        <?php foreach ($postes as $p): ?>
+            <?php foreach ($compo as $c): ?>
+                <?php if ($c["id_poste"] == $p["id_poste"] && $c["role"] == "TITULAIRE"): ?>
 
-    <table border="1" cellpadding="8" style="margin-top:15px;">
-        <thead>
-            <tr>
-                <th>Joueur</th>
-                <th>Poste</th>
-                <th>Statut</th>
-                <th>Taille</th>
-                <th>Poids</th>
-                <th>Titulaire ?</th>
-                <th>Moyenne</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($composition as $c): ?>
-                <tr>
-                    <td><?= htmlspecialchars($c["nom"] . " " . $c["prenom"]) ?></td>
-                    <td><?= htmlspecialchars($c["poste"]) ?></td>
-                    <td><?= $c["titulaire"] ? "Titulaire" : "Remplaçant" ?></td>
-                    <td><?= $c["taille"] ?> cm</td>
-                    <td><?= $c["poids"] ?> kg</td>
-                    <td><?= $c["titulaire"] ? "✔️" : "❌" ?></td>
-                    <td><?= $c["moyenne"] ?: "-" ?></td>
-                </tr>
+                    <?php 
+                    // Infos joueur
+                    $extra = getPlayerExtraInfo($gestion_sportive, $c["id_joueur"]);
+                    $derniere_note = $extra["evaluations"][0]["evaluation"] ?? "<i>Aucune</i>";
+                    ?>
+
+                    <tr>
+                        <td><?= $p["libelle"] ?></td>
+                        <td><?= $c["nom"] . " " . $c["prenom"] ?></td>
+                        <td><?= $c["taille"] ?>cm / <?= $c["poids"] ?>kg</td>
+                        <td>TITULAIRE</td>
+                        <td><?= $derniere_note ?></td>
+                    </tr>
+
+                <?php endif; ?>
             <?php endforeach; ?>
-        </tbody>
+        <?php endforeach; ?>
+    </table>
+
+    <br>
+
+    <h4>Remplaçants</h4>
+    <table border="1" cellpadding="8" width="100%">
+        <tr>
+            <th>Joueur</th>
+            <th>Poste</th>
+            <th>Taille / Poids</th>
+            <th>Dernière note</th>
+        </tr>
+
+        <?php foreach ($compo as $c): ?>
+            <?php if ($c["role"] == "REMPLACANT"): ?>
+
+                <?php 
+                $extra = getPlayerExtraInfo($gestion_sportive, $c["id_joueur"]);
+                $derniere_note = $extra["evaluations"][0]["evaluation"] ?? "<i>Aucune</i>";
+                ?>
+
+                <tr>
+                    <td><?= $c["nom"] . " " . $c["prenom"] ?></td>
+                    <td><?= $c["poste_libelle"] ?></td>
+                    <td><?= $c["taille"] ?>cm / <?= $c["poids"] ?>kg</td>
+                    <td><?= $derniere_note ?></td>
+                </tr>
+
+            <?php endif; ?>
+        <?php endforeach; ?>
     </table>
 
 <?php endif; ?>
 
 <hr>
 
-<h3>Résultat du match</h3>
+<h3>Actions</h3>
 
-<?php if (!$matchPasse): ?>
-    <p>Ce match n'a pas encore eu lieu.</p>
-<?php else: ?>
-    <?php if ($match["resultat"] === null): ?>
-        <p>Aucun résultat enregistré.</p>
-        <a href="resultat_match.php?id_match=<?= $id_match ?>" class="btn">Saisir le résultat</a>
-    <?php else: ?>
-        <p><strong>Résultat :</strong> <?= htmlspecialchars($match["resultat"]) ?></p>
-        <a href="resultat_match.php?id_match=<?= $id_match ?>" class="btn">Modifier le résultat</a>
-    <?php endif; ?>
+<!-- Modifier la compo -->
+<a class="btn" href="../feuille_match/composition.php?id_match=<?= $id_match ?>">
+    ✏ Modifier la composition
+</a>
 
-    <?php if ($hasCompo): ?>
-        <br><br>
-        <a href="../feuille_match/evaluation.php?id_match=<?= $id_match ?>" class="btn">
-            ⭐ Évaluer les joueurs
-        </a>
-    <?php endif; ?>
+<!-- Évaluer (si match passé) -->
+<?php if ($match["date_heure"] < date("Y-m-d H:i:s")): ?>
+    <a class="btn" href="../feuille_match/evaluation.php?id_match=<?= $id_match ?>">
+        ⭐ Évaluer les joueurs
+    </a>
 <?php endif; ?>
+
+<!-- Historique -->
+<a class="btn" href="../feuille_match/historique_feuille.php">
+    📜 Historique des compositions
+</a>
 
 <?php include "../includes/footer.php"; ?>

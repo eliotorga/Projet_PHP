@@ -3,6 +3,8 @@ session_start();
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
 
+
+
 // Récupération de tous les matchs
 $req = $gestion_sportive->query("SELECT * FROM matchs ORDER BY date_heure DESC");
 $matchs = $req->fetchAll(PDO::FETCH_ASSOC);
@@ -22,7 +24,6 @@ $reqMissingEval = $gestion_sportive->prepare("
 ?>
 
 <?php include "../includes/header.php"; ?>
-<?php include "../includes/menu.php"; ?>
 
 <h2>Liste des matchs</h2>
 
@@ -74,7 +75,7 @@ $reqMissingEval = $gestion_sportive->prepare("
 
                 <td>
                     <!-- Modifier le match -->
-                    <a href="modifier_match.php?id_match=<?= $m["id_match"] ?>" class="btn">📝 Modifier</a>
+                    <a href="/Projet_PHP/matchs/modifier_match.php?id_match=<?= $m["id_match"] ?>" class="btn">📝 Modifier</a>
 
                     <!-- Créer une compo -->
                     <?php if (!$hasCompo && !$matchPasse): ?>

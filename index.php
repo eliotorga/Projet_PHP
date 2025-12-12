@@ -67,8 +67,8 @@ $matchs_joues = $stmt->fetchAll();
             Lieu : <?= htmlspecialchars($prochain_match["lieu"]) ?><br>
             État : <strong><?= htmlspecialchars($prochain_match["etat"]) ?></strong><br><br>
 
-            <a href="/matchs/modifier_match.php?id=<?= $prochain_match["id_match"] ?>">✏️ Modifier match</a> |
-            <a href="/feuille_match/composer.php?id=<?= $prochain_match["id_match"] ?>">📝 Faire la feuille de match</a>
+            <a href="/Projet_PHP/matchs/modifier_match.php?id_match=<?= $prochain_match["id_match"] ?>">✏️ Modifier match</a> |
+            <a href="/Projet_PHP/feuille_match/composition.php?id=<?= $prochain_match["id_match"] ?>">📝 Faire la feuille de match</a>
         </p>
     <?php else: ?>
         <p>Aucun match à venir.</p>

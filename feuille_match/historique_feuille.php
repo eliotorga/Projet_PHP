@@ -8,7 +8,6 @@ $stmt = $gestion_sportive->query("SELECT * FROM matchs WHERE date_heure < NOW() 
 $matchs = $stmt->fetchAll();
 
 include "../includes/header.php";
-include "../includes/menu.php";
 ?>
 
 <h2>Historique des compositions</h2>

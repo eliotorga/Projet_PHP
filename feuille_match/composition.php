@@ -39,20 +39,36 @@ include "../includes/menu.php";
 
     <h3>Titulaires</h3>
 
-    <?php foreach ($postes as $p): ?>
-        <div>
-            <label><strong><?= $p["libelle"] ?></strong></label>
-            <select name="titulaire[<?= $p["id_poste"] ?>]">
-                <option value="">-- Aucun joueur --</option>
-                <?php foreach ($joueurs as $j): ?>
-                    <option value="<?= $j["id_joueur"] ?>">
-                        <?= $j["nom"] . " " . $j["prenom"] ?> 
-                        (<?= $j["taille"] ?>cm / <?= $j["poids"] ?>kg)
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-    <?php endforeach; ?>
+<?php foreach ($joueurs as $j): ?>
+    <?php $extra = getPlayerExtraInfo($gestion_sportive, $j["id_joueur"]); ?>
+
+    <div class="player-card">
+        <label>
+            <?= $j["nom"] . " " . $j["prenom"] ?>  
+            (<?= $j["taille"] ?> cm / <?= $j["poids"] ?> kg)
+        </label>
+
+        <select name="titulaire[<?= $j["id_joueur"] ?>]" 
+                class="player-select"
+                data-player="<?= htmlspecialchars(json_encode([
+                    "nom" => $j["nom"],
+                    "prenom" => $j["prenom"],
+                    "taille" => $j["taille"],
+                    "poids" => $j["poids"],
+                    "moyenne" => $extra["moyenne"],
+                    "evaluations" => $extra["evaluations"],
+                    "commentaires" => $extra["commentaires"]
+                ])) ?>">
+            <option value="">-- Choisir poste --</option>
+            <?php foreach ($postes as $p): ?>
+                <option value="<?= $p["id_poste"] ?>"><?= $p["libelle"] ?></option>
+            <?php endforeach; ?>
+        </select>
+
+        <div class="player-info"></div>
+    </div>
+<?php endforeach; ?>
+
 
     <br><h3>Remplaçants</h3>
 
@@ -74,5 +90,6 @@ include "../includes/menu.php";
     <br>
     <button type="submit" class="btn">💾 Enregistrer la composition</button>
 </form>
+<script src="/Projet_PHP/assets/js/feuille_match.js"></script>
 
 <?php include "../includes/footer.php"; ?>

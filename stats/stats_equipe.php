@@ -1,128 +1,115 @@
 <?php
-require_once __DIR__ . "/../includes/auth_check.php";
-require_once __DIR__ . "/../includes/config.php";
+session_start();
+require_once "../includes/auth_check.php";
+require_once "../includes/config.php";
+require_once "../bdd/db_participation.php";
+require_once "../bdd/db_joueur.php";
+require_once "../bdd/db_poste.php";
 
-require_once __DIR__ . "/../bdd/db_match.php";
-require_once __DIR__ . "/../bdd/db_joueur.php";
-require_once __DIR__ . "/../bdd/db_participation.php";
+include "../includes/header.php";
 
-include __DIR__ . "/../includes/header.php";
+/****************************************
+ * 1) STATISTIQUES GLOBALES DE L’ÉQUIPE
+ ****************************************/
 
+// Matchs joués (où résultat existe)
+$req = $gestion_sportive->query("
+    SELECT resultat
+    FROM matchs
+    WHERE resultat IS NOT NULL
+");
+$rows = $req->fetchAll();
 
-// --- Stats globales ---
-$statsEquipe = getMatchStats($gestion_sportive);
+$total = count($rows);
+$wins = count(array_filter($rows, fn($r) => $r["resultat"] === "VICTOIRE"));
+$loss = count(array_filter($rows, fn($r) => $r["resultat"] === "DEFAITE"));
+$draw = count(array_filter($rows, fn($r) => $r["resultat"] === "NUL"));
 
-$total = $statsEquipe["total"] ?? 0;
-$vic   = $statsEquipe["victoires"] ?? 0;
-$def   = $statsEquipe["defaites"] ?? 0;
-$nul   = $statsEquipe["nuls"] ?? 0;
-
-$pvic = $total ? round(($vic / $total) * 100, 1) : 0;
-$pdef = $total ? round(($def / $total) * 100, 1) : 0;
-$pnul = $total ? round(($nul / $total) * 100, 1) : 0;
-
-
-// --- Stats par joueur ---
-$joueurs = getAllPlayers($gestion_sportive);
-
-
-// Fonction pour calculer le poste préféré d'un joueur
-function getPostePrefere(PDO $db, int $id_joueur) {
-
-    $sql = "
-        SELECT p.id_poste, t.libelle, AVG(p.evaluation) AS avgNote
-        FROM participation p
-        JOIN poste t ON t.id_poste = p.id_poste
-        JOIN matchs m ON m.id_match = p.id_match
-        WHERE p.id_joueur = ? 
-          AND p.id_poste IS NOT NULL
-          AND p.evaluation IS NOT NULL
-          AND m.etat = 'JOUE'
-        GROUP BY p.id_poste
-        ORDER BY avgNote DESC
-        LIMIT 1
-    ";
-
-    $stmt = $db->prepare($sql);
-    $stmt->execute([$id_joueur]);
-    return $stmt->fetch(); // peut être false
+function pct($value, $total) {
+    return $total == 0 ? "0%" : round(($value / $total) * 100, 1) . "%";
 }
 
 ?>
 
-<div class="container">
+<h2>Statistiques de l’équipe</h2>
 
-    <h1>📊 Statistiques de l’équipe</h1>
+<table border="1" cellpadding="10">
+    <tr><th>Total matchs joués</th><td><?= $total ?></td></tr>
+    <tr><th>Victoires</th><td><?= $wins ?> (<?= pct($wins,$total) ?>)</td></tr>
+    <tr><th>Défaites</th><td><?= $loss ?> (<?= pct($loss,$total) ?>)</td></tr>
+    <tr><th>Nuls</th><td><?= $draw ?> (<?= pct($draw,$total) ?>)</td></tr>
+</table>
 
-    <h2>🏆 Résultats globaux</h2>
+<br><hr><br>
 
-    <?php if ($total == 0): ?>
-        <p>Aucun match joué pour l’instant.</p>
-    <?php else: ?>
+<h2>Statistiques par joueur</h2>
 
-        <ul>
-            <li>Victoires : <strong><?= $vic ?></strong> (<?= $pvic ?>%)</li>
-            <li>Défaites : <strong><?= $def ?></strong> (<?= $pdef ?>%)</li>
-            <li>Nuls : <strong><?= $nul ?></strong> (<?= $pnul ?>%)</li>
-            <li>Total matchs joués : <strong><?= $total ?></strong></li>
-        </ul>
-
-    <?php endif; ?>
-
-    <hr>
-
-    <h2>👥 Statistiques par joueur</h2>
-
-    <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse; font-size:14px;">
-        <tr style="background:#ddd;">
+<table border="1" cellpadding="8" width="100%">
+    <thead>
+        <tr>
             <th>Joueur</th>
             <th>Statut</th>
             <th>Poste préféré</th>
             <th>Titularisations</th>
             <th>Remplacements</th>
-            <th>Moyenne notes</th>
+            <th>Moyenne des notes</th>
+            <th>% victoires quand il joue</th>
             <th>Matchs consécutifs</th>
-            <th>% Victoires en jouant</th>
         </tr>
+    </thead>
 
-        <?php foreach ($joueurs as $j): ?>
+    <tbody>
+        <?php
+        $joueurs = getAllPlayers($gestion_sportive);
 
-            <?php
+        foreach ($joueurs as $j):
+
             $id = $j["id_joueur"];
 
-            $postePref = getPostePrefere($gestion_sportive, $id);
-            $nbTit     = getNbTitularisations($gestion_sportive, $id);
-            $nbRemp    = getNbRemplacements($gestion_sportive, $id);
-            $avgNote   = getAvgNote($gestion_sportive, $id);
-            $cons      = getNbMatchsConsecutifs($gestion_sportive, $id);
-            $winrate   = getWinRate($gestion_sportive, $id);
-            ?>
+            // Titularisations
+            $tit = getNbTitularisations($gestion_sportive, $id);
 
-            <tr>
-                <td><?= htmlspecialchars($j["prenom"] . " " . $j["nom"]) ?></td>
-                <td><?= htmlspecialchars($j["statut_libelle"]) ?></td>
+            // Remplacements
+            $remp = getNbRemplacements($gestion_sportive, $id);
 
-                <td>
-                    <?= $postePref ? htmlspecialchars($postePref["libelle"]) : "-" ?>
-                </td>
+            // Moyenne notes
+            $avg = getAvgNote($gestion_sportive, $id);
+            $avg = $avg ? round($avg, 2) : "-";
 
-                <td><?= $nbTit ?></td>
-                <td><?= $nbRemp ?></td>
+            // Matchs consécutifs
+            $cons = getNbMatchsConsecutifs($gestion_sportive, $id);
 
-                <td>
-                    <?= $avgNote ? round($avgNote, 2) . " ⭐" : "-" ?>
-                </td>
+            // Pourcentage de victoires
+            $winrate = getWinRate($gestion_sportive, $id);
+            $winrate = $winrate ? round($winrate, 1) . "%" : "-";
 
-                <td><?= $cons ?></td>
+            // Poste préféré : celui où il a la meilleure moyenne
+            $stmt = $gestion_sportive->prepare("
+                SELECT t.libelle, AVG(p.evaluation) AS note
+                FROM participation p
+                JOIN poste t ON t.id_poste = p.id_poste
+                WHERE p.id_joueur = ? AND p.evaluation IS NOT NULL
+                GROUP BY t.id_poste
+                ORDER BY note DESC
+                LIMIT 1
+            ");
+            $stmt->execute([$id]);
+            $bestPoste = $stmt->fetch();
+            $poste_pref = $bestPoste["libelle"] ?? "-";
 
-                <td>
-                    <?= $winrate !== null ? round($winrate, 1) . "%" : "-" ?>
-                </td>
-            </tr>
-
+        ?>
+        <tr>
+            <td><?= $j["nom"] . " " . $j["prenom"] ?></td>
+            <td><?= $j["statut_libelle"] ?></td>
+            <td><?= $poste_pref ?></td>
+            <td><?= $tit ?></td>
+            <td><?= $remp ?></td>
+            <td><?= $avg ?></td>
+            <td><?= $winrate ?></td>
+            <td><?= $cons ?></td>
+        </tr>
         <?php endforeach; ?>
-    </table>
+    </tbody>
+</table>
 
-</div>
-
-<?php include __DIR__ . "/../includes/footer.php"; ?>
+<?php include "../includes/footer.php"; ?>
