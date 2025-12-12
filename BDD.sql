@@ -148,3 +148,9 @@ INSERT INTO participation (id_match, id_joueur, id_poste, role, evaluation) VALU
 (1, 3, 3, 'TITULAIRE', 3),
 (1, 5, 1, 'REMPLACANT', 4),
 (1, 6, 2, 'REMPLACANT', 3);
+
+INSERT INTO joueur (nom, prenom, num_licence, date_naissance, taille_cm, poids_kg, id_statut)
+VALUES ('Fincan', 'William', 'LIC999', '2003-06-17', 188, 81, 1);
+
+INSERT INTO matchs (date_heure, adversaire, lieu, score_equipe, score_adverse, resultat, etat)
+VALUES ('2025-03-01 18:00:00', 'OM', 'DOMICILE', 0, 2, 'DEFAITE', 'JOUE');
