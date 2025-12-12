@@ -1,104 +1,98 @@
 <?php
-require_once __DIR__ . "/../includes/auth_check.php";
-require_once __DIR__ . "/../includes/config.php";
-require_once __DIR__ . "/../bdd/db_match.php";
+session_start();
+require_once "../includes/auth_check.php";
+require_once "../includes/config.php";
 
-include __DIR__ . "/../includes/header.php";
+// Récupération de tous les matchs
+$req = $gestion_sportive->query("SELECT * FROM matchs ORDER BY date_heure DESC");
+$matchs = $req->fetchAll(PDO::FETCH_ASSOC);
 
-// Récupération des matchs
-$matchs = getAllMatches($gestion_sportive);
+// Préparer les requêtes d'état
+$reqHasCompo = $gestion_sportive->prepare("
+    SELECT COUNT(*) 
+    FROM participation 
+    WHERE id_match = ?
+");
 
-// Couleur en fonction de l'état
-function colorEtat($etat) {
-    return match ($etat) {
-        "A_PREPARER" => "red",
-        "PREPARE"    => "orange",
-        "JOUE"       => "green",
-        default      => "black"
-    };
-}
+$reqMissingEval = $gestion_sportive->prepare("
+    SELECT COUNT(*)
+    FROM participation
+    WHERE id_match = ? AND evaluation IS NULL
+");
 ?>
 
-<div class="container">
+<?php include "../includes/header.php"; ?>
+<?php include "../includes/menu.php"; ?>
 
-    <h1>📅 Liste des matchs</h1>
+<h2>Liste des matchs</h2>
 
-    <p>
-        <a href="ajouter_match.php"
-           style="
-                padding: 8px 14px; 
-                background:#007bff; 
-                color:white; 
-                border-radius: 6px; 
-                text-decoration: none;
-           ">➕ Ajouter un match</a>
-    </p>
-
-    <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse;">
-        <tr style="background:#ddd;">
-            <th>ID</th>
-            <th>Date & heure</th>
+<table border="1" cellpadding="8" width="100%">
+    <thead>
+        <tr>
+            <th>Date</th>
             <th>Adversaire</th>
             <th>Lieu</th>
-            <th>État</th>
-            <th>Score</th>
+            <th>Résultat</th>
+            <th>Statut</th>
             <th>Actions</th>
         </tr>
+    </thead>
 
+    <tbody>
         <?php foreach ($matchs as $m): ?>
+
+            <?php
+            // 1) Y a-t-il une composition enregistrée ?
+            $reqHasCompo->execute([$m["id_match"]]);
+            $hasCompo = $reqHasCompo->fetchColumn() > 0;
+
+            // 2) Match passé ?
+            $matchPasse = ($m["date_heure"] < date("Y-m-d H:i:s"));
+
+            // 3) Toutes les évaluations sont faites ?
+            $reqMissingEval->execute([$m["id_match"]]);
+            $missingEval = $reqMissingEval->fetchColumn();
+            $isEvaluated = $hasCompo && $matchPasse && ($missingEval == 0);
+
+            // Déterminer le statut
+            if ($isEvaluated) {
+                $status = "<span style='color:gold; font-weight:bold;'>⭐ Évalué</span>";
+            } elseif ($hasCompo) {
+                $status = "<span style='color:green; font-weight:bold;'>🟩 Préparé</span>";
+            } else {
+                $status = "<span style='color:red; font-weight:bold;'>🟥 Non préparé</span>";
+            }
+            ?>
+
             <tr>
-                <td><?= $m["id_match"] ?></td>
-
                 <td><?= date("d/m/Y H:i", strtotime($m["date_heure"])) ?></td>
-
-                <td><?= htmlspecialchars($m["adversaire"]) ?></td>
-
+                <td><?= htmlspecialchars($m["equipe_adverse"]) ?></td>
                 <td><?= htmlspecialchars($m["lieu"]) ?></td>
+                <td><?= $m["resultat"] ?: "-" ?></td>
 
-                <td style="color: <?= colorEtat($m["etat"]); ?>; font-weight:bold;">
-                    <?= htmlspecialchars($m["etat"]) ?>
-                </td>
-
-                <td>
-                    <?php if ($m["etat"] === "JOUE"): ?>
-                        <strong><?= $m["score_equipe"] ?> - <?= $m["score_adverse"] ?></strong>
-                        (<?= strtolower($m["resultat"]) ?>)
-                    <?php else: ?>
-                        -
-                    <?php endif; ?>
-                </td>
+                <td><?= $status ?></td>
 
                 <td>
+                    <!-- Modifier le match -->
+                    <a href="modifier_match.php?id_match=<?= $m["id_match"] ?>" class="btn">📝 Modifier</a>
 
-                    <!-- Modifier -->
-                    <a href="modifier_match.php?id=<?= $m["id_match"] ?>">✏️ Modifier</a> |
-
-                    <!-- Supprimer -->
-                    <a href="supprimer_match.php?id=<?= $m["id_match"] ?>"
-                       onclick="return confirm('Supprimer ce match ?');"
-                       style="color:red;">🗑️ Supprimer</a> |
-
-                    <?php if ($m["etat"] !== "JOUE"): ?>
-                        <!-- Composer feuille de match -->
-                        <a href="/feuille_match/composer.php?id=<?= $m["id_match"] ?>">📝 Feuille</a> |
+                    <!-- Créer une compo -->
+                    <?php if (!$hasCompo && !$matchPasse): ?>
+                        <a href="../feuille_match/composition.php?id_match=<?= $m["id_match"] ?>" class="btn">➕ Créer compo</a>
                     <?php endif; ?>
 
-                    <?php if ($m["etat"] === "PREPARE"): ?>
-                        <!-- Saisir résultat -->
-                        <a href="resultat_match.php?id=<?= $m["id_match"] ?>">🏆 Résultat</a>
+                    <!-- Évaluer joueurs -->
+                    <?php if ($hasCompo && $matchPasse && !$isEvaluated): ?>
+                        <a href="../feuille_match/evaluation.php?id_match=<?= $m["id_match"] ?>" class="btn">⭐ Évaluer</a>
                     <?php endif; ?>
 
+                    <!-- Résultat -->
+                    <a href="resultat_match.php?id_match=<?= $m["id_match"] ?>" class="btn">🎯 Résultat</a>
                 </td>
-
             </tr>
+
         <?php endforeach; ?>
+    </tbody>
+</table>
 
-        <?php if (count($matchs) === 0): ?>
-            <tr><td colspan="7" style="text-align:center; padding:15px;">Aucun match enregistré.</td></tr>
-        <?php endif; ?>
-
-    </table>
-
-</div>
-
-<?php include __DIR__ . "/../includes/footer.php"; ?>
+<?php include "../includes/footer.php"; ?>
