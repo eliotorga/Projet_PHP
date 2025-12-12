@@ -1,156 +1,126 @@
-/******************************************************
- * 1) Création de la base
- ******************************************************/
+
 DROP DATABASE IF EXISTS gestion_equipe;
 CREATE DATABASE gestion_equipe
-    CHARACTER SET utf8mb4
-    COLLATE utf8mb4_general_ci;
-
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_general_ci;
 USE gestion_equipe;
 
-
-
-/******************************************************
- * 2) Table : statut
- ******************************************************/
 CREATE TABLE statut (
-    id_statut INT(11) NOT NULL AUTO_INCREMENT,
-    code VARCHAR(10) NOT NULL,
-    libelle VARCHAR(50) NOT NULL,
-    PRIMARY KEY (id_statut),
-    UNIQUE KEY(code)
+    id_statut INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(10) UNIQUE NOT NULL,
+    libelle VARCHAR(50) NOT NULL
 );
 
 INSERT INTO statut (code, libelle) VALUES
-('ACT', 'Actif'),
-('BLE', 'Blessé'),
-('SUS', 'Suspendu'),
-('ABS', 'Absent');
+('ACT','Actif'),
+('BLE','Blessé'),
+('SUS','Suspendu'),
+('ABS','Absent');
 
-
-
-/******************************************************
- * 3) Table : poste
- ******************************************************/
 CREATE TABLE poste (
-    id_poste INT(11) NOT NULL AUTO_INCREMENT,
-    code VARCHAR(10) NOT NULL,
-    libelle VARCHAR(50) NOT NULL,
-    PRIMARY KEY (id_poste),
-    UNIQUE KEY(code)
+    id_poste INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(10) UNIQUE NOT NULL,
+    libelle VARCHAR(50) NOT NULL
 );
 
 INSERT INTO poste (code, libelle) VALUES
-('ATT', 'Attaquant'),
-('DEF', 'Défenseur'),
-('MIL', 'Milieu'),
-('GAR', 'Gardien');
+('GAR','Gardien'),
+('DEF','Défenseur'),
+('MIL','Milieu'),
+('ATT','Attaquant');
 
-
-
-/******************************************************
- * 4) Table : joueur
- ******************************************************/
 CREATE TABLE joueur (
-    id_joueur INT(11) NOT NULL AUTO_INCREMENT,
+    id_joueur INT AUTO_INCREMENT PRIMARY KEY,
     nom VARCHAR(50) NOT NULL,
     prenom VARCHAR(50) NOT NULL,
-    num_licence VARCHAR(20) UNIQUE,
-    date_naissance DATE DEFAULT NULL,
-    taille_cm INT(11) DEFAULT NULL,
-    poids_kg DECIMAL(5,2) DEFAULT NULL,
-    id_statut INT(11) NOT NULL,
-
-    PRIMARY KEY (id_joueur),
+    num_licence VARCHAR(20) UNIQUE NOT NULL,
+    date_naissance DATE,
+    taille_cm INT,
+    poids_kg DECIMAL(5,2),
+    id_statut INT NOT NULL,
     FOREIGN KEY (id_statut) REFERENCES statut(id_statut)
 );
 
-INSERT INTO joueur (nom, prenom, num_licence, date_naissance, taille_cm, poids_kg, id_statut)
-VALUES
-('Martin', 'Lucas', 'LIC001', '2002-04-12', 180, 75, 1),
-('Dupont', 'Theo', 'LIC002', '2001-11-03', 175, 70, 1),
-('Bernard', 'Alex', 'LIC003', '2003-02-08', 190, 82, 1),
-('Robert', 'Maxime', 'LIC004', '2002-07-22', 172, 68, 2),
-('Olivier', 'Hugo', 'LIC005', '2001-09-15', 185, 79, 1),
-('Fontaine', 'Mathis', 'LIC006', '2004-01-29', 177, 72, 1),
-('Petit', 'Nicolas', 'LIC007', '2000-05-14', 181, 73, 3),
-('Morel', 'Antoine', 'LIC008', '2002-12-21', 178, 71, 1);
+INSERT INTO joueur VALUES
+(NULL,'Fincan','William','LIC001','2003-06-17',188,81,1),
+(NULL,'Torga','Elio','LIC002','2005-02-14',176,70,1),
+(NULL,'Martin','Lucas','LIC003','2002-04-12',180,75,1),
+(NULL,'Dupont','Theo','LIC004','2001-11-03',175,70,1),
+(NULL,'Bernard','Alex','LIC005','2003-02-08',190,82,1),
+(NULL,'Olivier','Hugo','LIC006','2001-09-15',185,79,1),
+(NULL,'Fontaine','Mathis','LIC007','2004-01-29',177,72,1),
+(NULL,'Morel','Antoine','LIC008','2002-12-21',178,71,1),
+(NULL,'Leroy','Maxime','LIC009','2001-08-09',174,69,1),
+(NULL,'Roux','Julien','LIC010','2002-10-18',182,77,1),
+(NULL,'Garnier','Paul','LIC011','2003-03-11',179,74,1),
+(NULL,'Chevalier','Leo','LIC012','2004-06-01',176,68,1),
+(NULL,'Baron','Tom','LIC013','2002-09-27',183,80,1),
+(NULL,'Marchand','Enzo','LIC014','2005-01-05',170,66,1),
+(NULL,'Perrin','Nathan','LIC015','2004-04-19',178,72,1);
 
-
-
-/******************************************************
- * 5) Table : commentaire
- ******************************************************/
 CREATE TABLE commentaire (
-    id_commentaire INT(11) NOT NULL AUTO_INCREMENT,
-    id_joueur INT(11) NOT NULL,
-    date_commentaire DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    texte TEXT DEFAULT NULL,
-
-    PRIMARY KEY (id_commentaire),
+    id_commentaire INT AUTO_INCREMENT PRIMARY KEY,
+    id_joueur INT NOT NULL,
+    date_commentaire DATETIME DEFAULT CURRENT_TIMESTAMP,
+    texte TEXT,
     FOREIGN KEY (id_joueur) REFERENCES joueur(id_joueur)
 );
 
-INSERT INTO commentaire (id_joueur, texte) VALUES
-(1, 'Très bonne attitude à l’entraînement.'),
-(1, 'Peut améliorer son jeu de tête.'),
-(2, 'Excellent sur les derniers entraînements.'),
-(3, 'Doit travailler sa vitesse.'),
-(5, 'Très impliqué dans le collectif.'),
-(6, 'Manque d’explosivité mais bonne vision de jeu.');
+INSERT INTO commentaire (id_joueur, texte)
+SELECT id_joueur, 'Bon comportement et implication.' FROM joueur;
 
 
-
-/******************************************************
- * 6) Table : matchs
- ******************************************************/
 CREATE TABLE matchs (
-    id_match INT(11) NOT NULL AUTO_INCREMENT,
+    id_match INT AUTO_INCREMENT PRIMARY KEY,
     date_heure DATETIME NOT NULL,
     adversaire VARCHAR(100) NOT NULL,
-    lieu ENUM('DOMICILE', 'EXTERIEUR') NOT NULL,
-    score_equipe INT(11) DEFAULT NULL,
-    score_adverse INT(11) DEFAULT NULL,
-    resultat ENUM('VICTOIRE', 'DEFAITE', 'NUL') DEFAULT NULL,
-    etat ENUM('A_PREPARER', 'PREPARE', 'JOUE') DEFAULT 'A_PREPARER',
-
-    PRIMARY KEY(id_match)
+    lieu ENUM('DOMICILE','EXTERIEUR') NOT NULL,
+    score_equipe INT,
+    score_adverse INT,
+    resultat ENUM('VICTOIRE','DEFAITE','NUL'),
+    etat ENUM('A_PREPARER','PREPARE','JOUE') DEFAULT 'A_PREPARER'
 );
 
-INSERT INTO matchs (date_heure, adversaire, lieu, score_equipe, score_adverse, resultat, etat)
-VALUES
-('2025-01-28 20:30:00', 'Montpellier SC', 'EXTERIEUR', 3, 1, 'VICTOIRE', 'JOUE'),
-('2025-02-15 18:00:00', 'Toulouse FC', 'DOMICILE', NULL, NULL, NULL, 'A_PREPARER');
+INSERT INTO matchs VALUES
+(NULL,'2025-01-10 20:30','Montpellier SC','EXTERIEUR',3,1,'VICTOIRE','JOUE'),
+(NULL,'2025-01-18 19:00','AS Monaco','DOMICILE',1,1,'NUL','JOUE'),
+(NULL,'2025-01-25 21:00','PSG','EXTERIEUR',0,2,'DEFAITE','JOUE'),
+(NULL,'2025-02-10 18:00','Toulouse FC','DOMICILE',NULL,NULL,NULL,'A_PREPARER'),
+(NULL,'2025-02-18 20:30','OM','EXTERIEUR',NULL,NULL,NULL,'A_PREPARER'),
+(NULL,'2025-03-02 17:00','OL','DOMICILE',NULL,NULL,NULL,'A_PREPARER');
 
-
-
-/******************************************************
- * 7) Table : participation
- ******************************************************/
 CREATE TABLE participation (
-    id_match INT(11) NOT NULL,
-    id_joueur INT(11) NOT NULL,
-    id_poste INT(11) DEFAULT NULL,
-    role ENUM('TITULAIRE', 'REMPLACANT') NOT NULL,
-    evaluation TINYINT(4) DEFAULT NULL,
-
-    PRIMARY KEY(id_match, id_joueur),
-
-    FOREIGN KEY(id_match) REFERENCES matchs(id_match) ON DELETE CASCADE,
-    FOREIGN KEY(id_joueur) REFERENCES joueur(id_joueur) ON DELETE CASCADE,
-    FOREIGN KEY(id_poste) REFERENCES poste(id_poste)
+    id_match INT NOT NULL,
+    id_joueur INT NOT NULL,
+    id_poste INT NOT NULL,
+    role ENUM('TITULAIRE','REMPLACANT') NOT NULL,
+    evaluation TINYINT,
+    PRIMARY KEY (id_match, id_joueur),
+    FOREIGN KEY (id_match) REFERENCES matchs(id_match) ON DELETE CASCADE,
+    FOREIGN KEY (id_joueur) REFERENCES joueur(id_joueur) ON DELETE CASCADE,
+    FOREIGN KEY (id_poste) REFERENCES poste(id_poste)
 );
 
--- Match JOUE (id_match = 1)
-INSERT INTO participation (id_match, id_joueur, id_poste, role, evaluation) VALUES
-(1, 1, 1, 'TITULAIRE', 4),
-(1, 2, 2, 'TITULAIRE', 5),
-(1, 3, 3, 'TITULAIRE', 3),
-(1, 5, 1, 'REMPLACANT', 4),
-(1, 6, 2, 'REMPLACANT', 3);
+INSERT INTO participation
+SELECT
+    m.id_match,
+    j.id_joueur,
+    (SELECT id_poste FROM poste ORDER BY RAND() LIMIT 1),
+    'TITULAIRE',
+    FLOOR(3 + RAND()*3)
+FROM matchs m
+JOIN joueur j ON j.id_statut = 1
+WHERE m.etat = 'JOUE'
+AND j.id_joueur <= 11;
 
-INSERT INTO joueur (nom, prenom, num_licence, date_naissance, taille_cm, poids_kg, id_statut)
-VALUES ('Fincan', 'William', 'LIC999', '2003-06-17', 188, 81, 1);
-
-INSERT INTO matchs (date_heure, adversaire, lieu, score_equipe, score_adverse, resultat, etat)
-VALUES ('2025-03-01 18:00:00', 'OM', 'DOMICILE', 0, 2, 'DEFAITE', 'JOUE');
+INSERT INTO matchs (date_heure, adversaire, lieu, score_equipe, score_adverse, resultat, etat) VALUES
+('2024-09-01 18:00:00','RC Lens','DOMICILE',2,0,'VICTOIRE','JOUE'),
+('2024-09-15 20:30:00','Stade Rennais','EXTERIEUR',1,1,'NUL','JOUE'),
+('2024-09-29 19:00:00','OGC Nice','DOMICILE',0,1,'DEFAITE','JOUE'),
+('2024-10-13 18:00:00','FC Nantes','EXTERIEUR',3,2,'VICTOIRE','JOUE'),
+('2024-10-27 21:00:00','LOSC Lille','DOMICILE',2,2,'NUL','JOUE'),
+('2024-11-10 18:00:00','RC Strasbourg','EXTERIEUR',1,0,'VICTOIRE','JOUE'),
+('2024-11-24 20:45:00','Clermont Foot','DOMICILE',4,1,'VICTOIRE','JOUE'),
+('2024-12-08 19:00:00','FC Metz','EXTERIEUR',0,0,'NUL','JOUE'),
+('2024-12-22 21:00:00','AS Saint-Étienne','DOMICILE',1,2,'DEFAITE','JOUE'),
+('2025-01-05 18:00:00','Montpellier SC','EXTERIEUR',3,1,'VICTOIRE','JOUE');

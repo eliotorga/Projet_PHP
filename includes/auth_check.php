@@ -11,7 +11,7 @@ if (!isset($_SESSION)) {
 }
 
 // 2 minutes d'inactivité
-$LIMIT = 20;
+$LIMIT = 200;
 
 // Pas connecté
 if (!isset($_SESSION["user_id"])) {

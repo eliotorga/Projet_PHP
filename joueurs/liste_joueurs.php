@@ -1,82 +1,176 @@
 <?php
-require_once __DIR__ . "/../includes/auth_check.php";
-require_once __DIR__ . "/../includes/config.php";
-require_once __DIR__ . "/../bdd/db_joueur.php";
+require_once "../includes/auth_check.php";
+require_once "../includes/config.php";
 
-include __DIR__ . "/../includes/header.php";
+/* ==========================
+   RÉCUP JOUEURS
+========================== */
+$stmt = $gestion_sportive->query("
+    SELECT 
+        j.id_joueur,
+        j.nom,
+        j.prenom,
+        j.num_licence,
+        s.libelle AS statut
+    FROM joueur j
+    JOIN statut s ON s.id_statut = j.id_statut
+    ORDER BY j.nom, j.prenom
+");
 
-// Récupération de tous les joueurs
-$joueurs = getAllPlayers($gestion_sportive);
+$joueurs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Fonction pour couleur des statuts
-function colorStatut($statut) {
-    return match ($statut) {
-        "Actif"      => "green",
-        "Blessé"     => "orange",
-        "Suspendu"   => "red",
-        "Absent"     => "gray",
-        default      => "black"
-    };
-}
+include "../includes/header.php";
 ?>
 
-<div class="container">
+<style>
+/* =====================
+   PAGE JOUEURS – DA
+===================== */
+.page-title {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:25px;
+}
 
-    <h1>👥 Liste des joueurs</h1>
+.page-title h1 {
+    font-size:2.2em;
+}
 
-    <p>
-        <a href="ajouter_joueur.php" 
-        style="
-            padding: 8px 14px; 
-            background: #007bff; 
-            color:white; 
-            border-radius: 6px; 
-            text-decoration: none;
-        ">➕ Ajouter un joueur</a>
-    </p>
+.table-container {
+    background:#fff;
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 10px 30px rgba(0,0,0,0.08);
+}
 
-    <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse;">
-        <tr style="background:#ddd;">
-            <th>ID</th>
-            <th>Nom</th>
-            <th>Prénom</th>
+table {
+    width:100%;
+    border-collapse:collapse;
+}
+
+thead {
+    background:#f4f6f8;
+}
+
+th, td {
+    padding:16px;
+    text-align:left;
+}
+
+th {
+    font-size:0.85em;
+    color:#555;
+}
+
+tbody tr {
+    border-top:1px solid #eee;
+}
+
+tbody tr:hover {
+    background:#f9fbfc;
+}
+
+/* =====================
+   BADGES
+===================== */
+.badge {
+    padding:6px 12px;
+    border-radius:999px;
+    font-size:0.75em;
+    font-weight:bold;
+}
+
+.ACT { background:#e8f5e9; color:#2e7d32; }
+.BLE { background:#fff3e0; color:#ef6c00; }
+.SUS { background:#ffebee; color:#c62828; }
+.ABS { background:#eceff1; color:#455a64; }
+
+/* =====================
+   ACTIONS
+===================== */
+.actions {
+    display:flex;
+    gap:10px;
+}
+
+.actions a {
+    padding:8px 12px;
+    border-radius:10px;
+    font-size:0.85em;
+    font-weight:bold;
+    text-decoration:none;
+    color:#fff;
+}
+
+.edit { background:#1976d2; }
+.delete { background:#424242; }
+
+/* =====================
+   FOOTER INFO
+===================== */
+.info {
+    margin-top:20px;
+    padding:14px;
+    background:#f4f6f8;
+    border-radius:12px;
+    font-style:italic;
+}
+</style>
+
+<div class="page-title">
+    <h1>👥 Gestion des joueurs</h1>
+    <a href="ajouter_joueur.php" class="btn btn-green">➕ Ajouter un joueur</a>
+</div>
+
+<p>
+Gérez l’effectif de l’équipe : informations personnelles, statut et actions de gestion.
+</p>
+
+<div class="table-container">
+<table>
+    <thead>
+        <tr>
+            <th>Joueur</th>
             <th>Licence</th>
-            <th>Taille (cm)</th>
-            <th>Poids (kg)</th>
             <th>Statut</th>
             <th>Actions</th>
         </tr>
+    </thead>
+    <tbody>
+    <?php foreach ($joueurs as $j): ?>
+        <tr>
+            <td>
+                <strong><?= htmlspecialchars($j["nom"]) ?></strong><br>
+                <span style="opacity:.7"><?= htmlspecialchars($j["prenom"]) ?></span>
+            </td>
+            <td><?= htmlspecialchars($j["num_licence"]) ?></td>
+            <td>
+                <span class="badge <?= strtoupper(substr($j["statut"],0,3)) ?>">
+                    <?= htmlspecialchars($j["statut"]) ?>
+                </span>
+            </td>
+            <td>
+                <div class="actions">
+                    <a href="modifier_joueur.php?id_joueur=<?= $j["id_joueur"] ?>" class="edit">
+                        ✏️ Modifier
+                    </a>
 
-        <?php foreach ($joueurs as $j): ?>
-            <tr>
-                <td><?= $j["id_joueur"] ?></td>
-                <td><?= htmlspecialchars($j["nom"]) ?></td>
-                <td><?= htmlspecialchars($j["prenom"]) ?></td>
-                <td><?= htmlspecialchars($j["num_licence"]) ?></td>
-                <td><?= $j["taille_cm"] ?></td>
-                <td><?= $j["poids_kg"] ?></td>
-
-                <td style="color: <?= colorStatut($j["statut_libelle"]); ?>; font-weight:bold;">
-                    <?= htmlspecialchars($j["statut_libelle"]) ?>
-                </td>
-
-                <td>
-                    <a href="modifier_joueur.php?id=<?= $j["id_joueur"] ?>">✏️ Modifier</a> |
-                    <a href="supprimer_joueur.php?id=<?= $j["id_joueur"] ?>" 
-                       onclick="return confirm('Supprimer ce joueur ?');"
-                       style="color:red;">🗑️ Supprimer</a>
-                </td>
-            </tr>
-        <?php endforeach; ?>
-
-        <?php if (count($joueurs) === 0): ?>
-            <tr>
-                <td colspan="8" style="text-align:center; padding:15px;">Aucun joueur trouvé.</td>
-            </tr>
-        <?php endif; ?>
-
-    </table>
-
+                    <a href="supprimer_joueur.php?id_joueur=<?= $j["id_joueur"] ?>"
+                       class="delete"
+                       onclick="return confirm('⚠️ Supprimer définitivement ce joueur ?');">
+                        🗑️ Supprimer
+                    </a>
+                </div>
+            </td>
+        </tr>
+    <?php endforeach; ?>
+    </tbody>
+</table>
 </div>
 
-<?php include __DIR__ . "/../includes/footer.php"; ?>
+<div class="info">
+💡 La suppression d’un joueur entraîne automatiquement la suppression de ses commentaires et participations.
+</div>
+
+<?php include "../includes/footer.php"; ?>

@@ -1,19 +1,36 @@
 <?php
+session_start();
 require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";
 include __DIR__ . "/../includes/header.php";
 
 /* =======================
+   FONCTIONS UTILITAIRES
+======================= */
+function pct($v, $t) {
+    return $t > 0 ? round(($v / $t) * 100, 1) : 0;
+}
+
+function statutClass($statut) {
+    return match ($statut) {
+        'Actif' => 'actif',
+        'Blessé' => 'blesse',
+        'Suspendu' => 'suspendu',
+        default => ''
+    };
+}
+
+/* =======================
    STATS ÉQUIPE
 ======================= */
 $totalMatchs = $gestion_sportive->query("
-    SELECT COUNT(*) FROM matchs WHERE resultat IS NOT NULL
+    SELECT COUNT(*) FROM matchs WHERE etat='JOUE'
 ")->fetchColumn();
 
 $res = $gestion_sportive->query("
     SELECT resultat, COUNT(*) nb
     FROM matchs
-    WHERE resultat IS NOT NULL
+    WHERE etat='JOUE'
     GROUP BY resultat
 ")->fetchAll(PDO::FETCH_KEY_PAIR);
 
@@ -21,34 +38,30 @@ $victoires = $res["VICTOIRE"] ?? 0;
 $defaites  = $res["DEFAITE"] ?? 0;
 $nuls      = $res["NUL"] ?? 0;
 
-function pct($v, $t) {
-    return $t > 0 ? round(($v / $t) * 100, 1) : 0;
-}
-
 /* =======================
-   JOUEURS
+   LISTE DES JOUEURS
 ======================= */
 $joueurs = $gestion_sportive->query("
     SELECT j.id_joueur, j.nom, j.prenom, s.libelle AS statut
     FROM joueur j
-    JOIN statut s ON j.id_statut = s.id_statut
+    JOIN statut s ON s.id_statut = j.id_statut
     ORDER BY j.nom, j.prenom
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 /* =======================
-   MATCHS JOUÉS (ordre desc)
+   MATCHS JOUÉS (ordre décroissant)
 ======================= */
-$matchs = $gestion_sportive->query("
+$matchsJoues = $gestion_sportive->query("
     SELECT id_match
     FROM matchs
-    WHERE resultat IS NOT NULL
+    WHERE etat='JOUE'
     ORDER BY date_heure DESC
 ")->fetchAll(PDO::FETCH_COLUMN);
 ?>
 
 <style>
-/* ===== STYLE GLOBAL ===== */
 h2 { color:#1e293b; margin-top:25px; }
+
 .stats-equipe {
     background:#f8fafc;
     border-left:6px solid #2563eb;
@@ -88,7 +101,7 @@ tbody tr:hover { background:#e0f2fe; }
     font-size:13px;
 }
 .actif { background:#dcfce7; color:#166534; }
-.blessé { background:#fee2e2; color:#991b1b; }
+.blesse { background:#fee2e2; color:#991b1b; }
 .suspendu { background:#fef9c3; color:#854d0e; }
 </style>
 
@@ -134,17 +147,18 @@ tbody tr:hover { background:#e0f2fe; }
 <?php
 $id = $j["id_joueur"];
 
-/* Titulaires / remplaçants */
+/* Titularisations / remplacements */
 $stmt = $gestion_sportive->prepare("
     SELECT
-        SUM(role='TITULAIRE') titu,
-        SUM(role='REMPLACANT') remp
-    FROM participation WHERE id_joueur = ?
+        SUM(role='TITULAIRE') AS titu,
+        SUM(role='REMPLACANT') AS remp
+    FROM participation
+    WHERE id_joueur=?
 ");
 $stmt->execute([$id]);
 $roles = $stmt->fetch(PDO::FETCH_ASSOC);
 
-/* Moyenne notes */
+/* Moyenne des évaluations */
 $stmt = $gestion_sportive->prepare("
     SELECT ROUND(AVG(evaluation),2)
     FROM participation
@@ -153,11 +167,11 @@ $stmt = $gestion_sportive->prepare("
 $stmt->execute([$id]);
 $moy = $stmt->fetchColumn();
 
-/* Poste préféré */
+/* Poste préféré (meilleure moyenne) */
 $stmt = $gestion_sportive->prepare("
-    SELECT p.libelle
+    SELECT po.libelle
     FROM participation pa
-    JOIN poste p ON pa.id_poste=p.id_poste
+    JOIN poste po ON po.id_poste = pa.id_poste
     WHERE pa.id_joueur=? AND pa.evaluation IS NOT NULL
     GROUP BY pa.id_poste
     ORDER BY AVG(pa.evaluation) DESC
@@ -166,21 +180,21 @@ $stmt = $gestion_sportive->prepare("
 $stmt->execute([$id]);
 $poste = $stmt->fetchColumn() ?: "—";
 
-/* % victoires */
+/* % matchs gagnés joués */
 $stmt = $gestion_sportive->prepare("
     SELECT COUNT(*) total,
            SUM(m.resultat='VICTOIRE') wins
     FROM participation pa
-    JOIN matchs m ON pa.id_match=m.id_match
-    WHERE pa.id_joueur=? AND m.resultat IS NOT NULL
+    JOIN matchs m ON m.id_match = pa.id_match
+    WHERE pa.id_joueur=? AND m.etat='JOUE'
 ");
 $stmt->execute([$id]);
 $w = $stmt->fetch(PDO::FETCH_ASSOC);
-$pctWin = $w["total"] > 0 ? round(($w["wins"]/$w["total"])*100,1)." %" : "—";
+$pctWin = $w["total"] > 0 ? pct($w["wins"], $w["total"])." %" : "—";
 
 /* Sélections consécutives */
 $consecutifs = 0;
-foreach ($matchs as $mid) {
+foreach ($matchsJoues as $mid) {
     $stmt = $gestion_sportive->prepare("
         SELECT COUNT(*) FROM participation
         WHERE id_match=? AND id_joueur=?
@@ -194,7 +208,7 @@ foreach ($matchs as $mid) {
 <tr>
     <td><?= htmlspecialchars($j["prenom"]." ".$j["nom"]) ?></td>
     <td data-statut="<?= htmlspecialchars($j["statut"]) ?>">
-        <span class="badge <?= strtolower($j["statut"]) ?>">
+        <span class="badge <?= statutClass($j["statut"]) ?>">
             <?= htmlspecialchars($j["statut"]) ?>
         </span>
     </td>
@@ -212,7 +226,7 @@ foreach ($matchs as $mid) {
 </table>
 
 <script>
-/* ===== TRI ===== */
+/* ===== TRI TABLE ===== */
 document.querySelectorAll("th").forEach((th, i) => {
     let asc = true;
     th.addEventListener("click", () => {

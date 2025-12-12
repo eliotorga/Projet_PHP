@@ -1,74 +1,49 @@
 <?php
-require_once __DIR__ . "/../includes/auth_check.php";
-require_once __DIR__ . "/../includes/config.php";
-require_once __DIR__ . "/../bdd/db_joueur.php";
+require_once "../includes/auth_check.php";
+require_once "../includes/config.php";
 
-include __DIR__ . "/../includes/header.php";
-
-// Vérification ID
-if (!isset($_GET["id"])) {
-    die("<p style='color:red; font-weight:bold;'>ID joueur manquant.</p>");
+/* ==========================
+   VÉRIFICATION ID
+========================== */
+if (!isset($_GET["id_joueur"]) || !is_numeric($_GET["id_joueur"])) {
+    die("ID joueur manquant ou invalide");
 }
 
-$id_joueur = intval($_GET["id"]);
-$joueur = getPlayerById($gestion_sportive, $id_joueur);
+$id_joueur = (int) $_GET["id_joueur"];
 
-if (!$joueur) {
-    die("<p style='color:red; font-weight:bold;'>Joueur introuvable.</p>");
+try {
+    $gestion_sportive->beginTransaction();
+
+    /* 1️⃣ Commentaires */
+    $stmt = $gestion_sportive->prepare("
+        DELETE FROM commentaire
+        WHERE id_joueur = ?
+    ");
+    $stmt->execute([$id_joueur]);
+
+    /* 2️⃣ Participations */
+    $stmt = $gestion_sportive->prepare("
+        DELETE FROM participation
+        WHERE id_joueur = ?
+    ");
+    $stmt->execute([$id_joueur]);
+
+    /* 3️⃣ Joueur */
+    $stmt = $gestion_sportive->prepare("
+        DELETE FROM joueur
+        WHERE id_joueur = ?
+    ");
+    $stmt->execute([$id_joueur]);
+
+    $gestion_sportive->commit();
+
+} catch (Exception $e) {
+    $gestion_sportive->rollBack();
+    die("Erreur lors de la suppression du joueur.");
 }
 
-// Si l’utilisateur confirme la suppression :
-if (isset($_POST["confirm"]) && $_POST["confirm"] === "yes") {
-    deletePlayer($gestion_sportive, $id_joueur);
-    header("Location: liste_joueurs.php");
-    exit;
-}
-?>
-
-<div class="container">
-
-    <h1>🗑️ Supprimer un joueur</h1>
-
-    <p style="font-size:17px;">
-        Voulez-vous vraiment supprimer le joueur suivant ?
-    </p>
-
-    <ul>
-        <li><strong>Nom :</strong> <?= htmlspecialchars($joueur["nom"]) ?></li>
-        <li><strong>Prénom :</strong> <?= htmlspecialchars($joueur["prenom"]) ?></li>
-        <li><strong>Licence :</strong> <?= htmlspecialchars($joueur["num_licence"]) ?></li>
-    </ul>
-
-    <p style="color:red; font-weight:bold;">
-        ⚠️ Cette action est irréversible.
-    </p>
-
-    <form method="POST">
-        <button 
-            type="submit"
-            name="confirm"
-            value="yes"
-            style="
-                padding:10px 20px; 
-                background:red; 
-                color:white;
-                border:none; 
-                border-radius:6px;
-                cursor:pointer;
-            "
-        >Oui, supprimer</button>
-
-        <a href="liste_joueurs.php"
-            style="
-                margin-left:20px; 
-                text-decoration:none;
-                padding:10px 20px; 
-                background:#ccc; 
-                border-radius:6px;
-            "
-        >Annuler</a>
-    </form>
-
-</div>
-
-<?php include __DIR__ . "/../includes/footer.php"; ?>
+/* ==========================
+   REDIRECTION
+========================== */
+header("Location: liste_joueurs.php");
+exit;
