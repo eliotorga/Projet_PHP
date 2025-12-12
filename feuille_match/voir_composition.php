@@ -2,16 +2,20 @@
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
 
-/* Vérification ID match */
+/* =============================
+   Vérification ID match
+============================= */
 if (!isset($_GET["id_match"])) {
     die("Match non spécifié.");
 }
 
-$id_match = (int) $_GET["id_match"];
+$id_match = intval($_GET["id_match"]);
 
-/* Infos du match */
+/* =============================
+   Infos match
+============================= */
 $stmt = $gestion_sportive->prepare("
-    SELECT date_heure, adversaire, lieu, resultat
+    SELECT *
     FROM matchs
     WHERE id_match = ?
 ");
@@ -22,86 +26,226 @@ if (!$match) {
     die("Match introuvable.");
 }
 
-/* Récupération de la composition */
+/* =============================
+   Récup titulaires
+============================= */
 $stmt = $gestion_sportive->prepare("
     SELECT 
         j.nom,
         j.prenom,
-        p.role,
         p.evaluation,
-        po.libelle AS poste
+        po.code AS poste,
+        po.libelle AS poste_libelle
     FROM participation p
     JOIN joueur j ON j.id_joueur = p.id_joueur
-    LEFT JOIN poste po ON po.id_poste = p.id_poste
+    JOIN poste po ON po.id_poste = p.id_poste
     WHERE p.id_match = ?
-    ORDER BY p.role DESC, po.libelle
+      AND p.role = 'TITULAIRE'
+    ORDER BY po.code
 ");
 $stmt->execute([$id_match]);
-$participants = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$titulaires = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+/* =============================
+   Classement par poste
+============================= */
+$GAR = $DEF = $MIL = $ATT = [];
+
+foreach ($titulaires as $j) {
+    switch ($j["poste"]) {
+        case "GAR": $GAR[] = $j; break;
+        case "DEF": $DEF[] = $j; break;
+        case "MIL": $MIL[] = $j; break;
+        case "ATT": $ATT[] = $j; break;
+    }
+}
 
 include "../includes/header.php";
 ?>
 
-<h1>👀 Feuille de match</h1>
+<style>
+/* =============================
+   GLOBAL
+============================= */
+.page {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
 
-<p>
-    <strong>Date :</strong>
-    <?= date("d/m/Y H:i", strtotime($match["date_heure"])) ?><br>
+.card {
+    background: linear-gradient(180deg, #1f3d2b, #12281c);
+    border-radius: 18px;
+    padding: 24px;
+    margin-bottom: 30px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.35);
+}
 
-    <strong>Adversaire :</strong>
-    <?= htmlspecialchars($match["adversaire"]) ?><br>
+h1, h2 {
+    margin: 0 0 15px;
+}
 
-    <strong>Lieu :</strong>
-    <?= htmlspecialchars($match["lieu"]) ?><br>
+/* =============================
+   TERRAIN
+============================= */
+.pitch {
+    background: linear-gradient(180deg, #1f7a3f, #145c2f);
+    border-radius: 20px;
+    padding: 35px 20px;
+    border: 4px solid rgba(255,255,255,0.15);
+}
 
-    <strong>Résultat :</strong>
-    <?= $match["resultat"] ?? "Non joué" ?>
-</p>
+/* Ligne de joueurs */
+.line {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    margin-bottom: 35px;
+    flex-wrap: wrap;
+}
 
-<hr>
+/* Carte joueur */
+.player {
+    width: 170px;
+    background: rgba(0,0,0,0.35);
+    border-radius: 14px;
+    padding: 14px;
+    text-align: center;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+}
 
-<h2>🟢 Titulaires</h2>
+.player strong {
+    display: block;
+    font-size: 15px;
+}
 
-<table border="1" cellpadding="8">
-    <tr>
-        <th>Poste</th>
-        <th>Joueur</th>
-        <th>Évaluation</th>
-    </tr>
+.player small {
+    opacity: 0.8;
+}
 
-<?php foreach ($participants as $p): ?>
-    <?php if ($p["role"] === "TITULAIRE"): ?>
-    <tr>
-        <td><?= htmlspecialchars($p["poste"]) ?></td>
-        <td><?= htmlspecialchars($p["nom"] . " " . $p["prenom"]) ?></td>
-        <td><?= $p["evaluation"] ?? "-" ?></td>
-    </tr>
-    <?php endif; ?>
-<?php endforeach; ?>
-</table>
+.stars {
+    margin-top: 6px;
+    color: gold;
+    font-size: 14px;
+}
 
-<h2>🟡 Remplaçants</h2>
+/* =============================
+   BADGES MATCH
+============================= */
+.badges {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
 
-<table border="1" cellpadding="8">
-    <tr>
-        <th>Poste</th>
-        <th>Joueur</th>
-        <th>Évaluation</th>
-    </tr>
+.badge {
+    background: rgba(255,255,255,0.15);
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 14px;
+}
 
-<?php foreach ($participants as $p): ?>
-    <?php if ($p["role"] === "REMPLACANT"): ?>
-    <tr>
-        <td><?= htmlspecialchars($p["poste"]) ?></td>
-        <td><?= htmlspecialchars($p["nom"] . " " . $p["prenom"]) ?></td>
-        <td><?= $p["evaluation"] ?? "-" ?></td>
-    </tr>
-    <?php endif; ?>
-<?php endforeach; ?>
-</table>
+/* =============================
+   RETOUR
+============================= */
+.back {
+    margin-top: 20px;
+}
+.back a {
+    text-decoration: none;
+    padding: 12px 20px;
+    background: #34495e;
+    border-radius: 10px;
+    color: #fff;
+}
+</style>
 
-<br>
+<div class="page">
 
-<a href="../matchs/liste_matchs.php" class="btn">⬅ Retour aux matchs</a>
+    <!-- EN-TÊTE MATCH -->
+    <div class="card">
+        <h1>👁️ Feuille de match</h1>
+        <div class="badges">
+            <div class="badge">⚔️ <?= htmlspecialchars($match["adversaire"]) ?></div>
+            <div class="badge">📅 <?= date("d/m/Y H:i", strtotime($match["date_heure"])) ?></div>
+            <div class="badge">📍 <?= $match["lieu"] ?></div>
+            <div class="badge">🏁 <?= $match["resultat"] ?></div>
+        </div>
+    </div>
+
+    <!-- TERRAIN -->
+    <div class="card">
+        <h2>🧩 Composition titulaire</h2>
+
+        <div class="pitch">
+
+            <?php if ($ATT): ?>
+                <div class="line">
+                    <?php foreach ($ATT as $j): ?>
+                        <div class="player">
+                            <strong><?= htmlspecialchars($j["prenom"]." ".$j["nom"]) ?></strong>
+                            <small>Attaquant</small>
+                            <div class="stars">
+                                <?= str_repeat("★", $j["evaluation"]) ?>
+                                <?= str_repeat("☆", 5 - $j["evaluation"]) ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($MIL): ?>
+                <div class="line">
+                    <?php foreach ($MIL as $j): ?>
+                        <div class="player">
+                            <strong><?= htmlspecialchars($j["prenom"]." ".$j["nom"]) ?></strong>
+                            <small>Milieu</small>
+                            <div class="stars">
+                                <?= str_repeat("★", $j["evaluation"]) ?>
+                                <?= str_repeat("☆", 5 - $j["evaluation"]) ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($DEF): ?>
+                <div class="line">
+                    <?php foreach ($DEF as $j): ?>
+                        <div class="player">
+                            <strong><?= htmlspecialchars($j["prenom"]." ".$j["nom"]) ?></strong>
+                            <small>Défenseur</small>
+                            <div class="stars">
+                                <?= str_repeat("★", $j["evaluation"]) ?>
+                                <?= str_repeat("☆", 5 - $j["evaluation"]) ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($GAR): ?>
+                <div class="line">
+                    <?php foreach ($GAR as $j): ?>
+                        <div class="player">
+                            <strong><?= htmlspecialchars($j["prenom"]." ".$j["nom"]) ?></strong>
+                            <small>Gardien</small>
+                            <div class="stars">
+                                <?= str_repeat("★", $j["evaluation"]) ?>
+                                <?= str_repeat("☆", 5 - $j["evaluation"]) ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+        </div>
+    </div>
+
+    <div class="back">
+        <a href="../matchs/liste_matchs.php">← Retour aux matchs</a>
+    </div>
+
+</div>
 
 <?php include "../includes/footer.php"; ?>
