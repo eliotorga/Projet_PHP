@@ -2,48 +2,76 @@
 session_start();
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
+require_once "../bdd/db_match.php";
 require_once "../bdd/db_participation.php";
 
-$stmt = $gestion_sportive->query("SELECT * FROM matchs WHERE date_heure < NOW() ORDER BY date_heure DESC");
-$matchs = $stmt->fetchAll();
-
 include "../includes/header.php";
+
+// Tous les matchs (JOUE et PREPARE)
+$matches = getAllMatches($gestion_sportive);
 ?>
 
 <h2>Historique des compositions</h2>
 
-<?php foreach ($matchs as $m): ?>
-    <?php $compo = getParticipationByMatch($gestion_sportive, $m["id_match"]); ?>
+<?php foreach ($matches as $match): ?>
 
-    <div style="border:1px solid #ccc; padding:10px; margin-bottom:20px;">
-        <h3>Match vs <?= $m["equipe_adverse"] ?> — <?= date("d/m/Y H:i", strtotime($m["date_heure"])) ?></h3>
+    <div class="card" style="margin-bottom: 25px; padding: 20px;">
 
-        <p><strong>Résultat :</strong> <?= $m["resultat"] ?: "Non renseigné" ?></p>
+        <!-- TITRE DU MATCH -->
+        <h3>
+            Match vs 
+            <strong><?= htmlspecialchars($match["adversaire"]) ?></strong><br>
+            — <?= date("d/m/Y H:i", strtotime($match["date_heure"])) ?>
+        </h3>
 
-        <?php if (count($compo)==0): ?>
+        <!-- RÉSULTAT -->
+        <p>
+            <strong>Résultat :</strong>
+            <?php if ($match["resultat"] === null): ?>
+                <span style="color: grey;">Non renseigné</span>
+            <?php else: ?>
+                <?php if ($match["resultat"] === "VICTOIRE") $color = "green";
+                      elseif ($match["resultat"] === "DEFAITE") $color = "red";
+                      else $color = "orange"; ?>
+                <span style="color: <?= $color ?>; font-weight: bold;">
+                    <?= $match["resultat"] ?>
+                </span>
+            <?php endif; ?>
+        </p>
+
+        <?php
+        // Récupération des joueurs de ce match
+        $compo = getParticipationByMatch($gestion_sportive, $match["id_match"]);
+
+        if (empty($compo)): ?>
             <p style="color:red;">Aucune composition enregistrée.</p>
-        <?php else: ?>
-            <table border="1" cellpadding="8" width="100%">
-                <thead>
-                    <tr>
-                        <th>Joueur</th>
-                        <th>Poste</th>
-                        <th>Rôle</th>
-                        <th>Évaluation</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($compo as $p): ?>
-                    <tr>
-                        <td><?= $p["nom"] . " " . $p["prenom"] ?></td>
-                        <td><?= $p["poste_libelle"] ?></td>
-                        <td><?= $p["role"] ?></td>
-                        <td><?= $p["evaluation"] ?? "<i>Non évalué</i>" ?></td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
+            </div>
+            <?php continue; ?>
         <?php endif; ?>
+
+        <!-- TABLEAU DES JOUEURS -->
+        <table class="table" border="1" cellpadding="6" cellspacing="0" width="100%">
+            <thead>
+                <tr>
+                    <th>Joueur</th>
+                    <th>Poste</th>
+                    <th>Rôle</th>
+                    <th>Évaluation</th>
+                </tr>
+            </thead>
+
+            <tbody>
+            <?php foreach ($compo as $ligne): ?>
+                <tr>
+                    <td><?= htmlspecialchars($ligne["prenom"] . " " . $ligne["nom"]) ?></td>
+                    <td><?= $ligne["poste_libelle"] ?? "-" ?></td>
+                    <td><?= htmlspecialchars($ligne["role"]) ?></td>
+                    <td><?= $ligne["evaluation"] !== null ? $ligne["evaluation"] : "-" ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+
     </div>
 
 <?php endforeach; ?>

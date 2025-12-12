@@ -2,128 +2,79 @@
 session_start();
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
-require_once "../bdd/db_participation.php";
-require_once "../bdd/db_joueur.php";
-require_once "../bdd/db_poste.php";
 
-// Vérification ID
-if (!isset($_GET["id_match"])) die("Match non spécifié.");
+require_once "../bdd/db_match.php";
+
+if (!isset($_GET["id_match"])) {
+    header("Location: liste_matchs.php");
+    exit;
+}
+
 $id_match = intval($_GET["id_match"]);
+$match = getMatchById($gestion_sportive, $id_match);
 
-// Récup match
-$stmt = $gestion_sportive->prepare("SELECT * FROM matchs WHERE id_match = ?");
-$stmt->execute([$id_match]);
-$match = $stmt->fetch();
-
-if (!$match) die("Match introuvable.");
-
-// Récup composition
-$compo = getParticipationByMatch($gestion_sportive, $id_match);
-
-// Récup postes pour affichage trié
-$postes = getAllPostes($gestion_sportive);
+if (!$match) {
+    die("<h3 style='color:red;'>❌ Match introuvable.</h3>");
+}
 
 include "../includes/header.php";
 ?>
 
-<h2>Modifier le match : <?= htmlspecialchars($match["equipe_adverse"]) ?></h2>
+<h2>✏️ Modifier le match</h2>
 
-<p><strong>Date :</strong> <?= date("d/m/Y H:i", strtotime($match["date_heure"])) ?></p>
-<p><strong>Lieu :</strong> <?= htmlspecialchars($match["lieu"]) ?></p>
-<p><strong>Résultat :</strong> <?= $match["resultat"] ?: "<i>Non renseigné</i>" ?></p>
+<form method="POST" action="save_modifier_match.php" class="card" style="padding:20px;">
+    <input type="hidden" name="id_match" value="<?= $id_match ?>">
 
-<hr>
+    <!-- DATE & HEURE -->
+    <label>Date et heure :</label><br>
+    <input type="datetime-local" name="date_heure"
+           value="<?= date('Y-m-d\TH:i', strtotime($match["date_heure"])) ?>"
+           required>
+    <br><br>
 
-<h3>Composition actuelle</h3>
+    <!-- ADVERSAIRE -->
+    <label>Adversaire :</label><br>
+    <input type="text" name="adversaire" value="<?= htmlspecialchars($match["adversaire"]) ?>" required>
+    <br><br>
 
-<?php if (count($compo) == 0): ?>
-    <p style="color:red;">Aucune composition enregistrée pour ce match.</p>
-<?php else: ?>
+    <!-- LIEU -->
+    <label>Lieu :</label><br>
+    <select name="lieu" required>
+        <option value="DOMICILE" <?= $match["lieu"] === "DOMICILE" ? "selected" : "" ?>>Domicile</option>
+        <option value="EXTERIEUR" <?= $match["lieu"] === "EXTERIEUR" ? "selected" : "" ?>>Extérieur</option>
+    </select>
+    <br><br>
 
-    <h4>Titulaires</h4>
-    <table border="1" cellpadding="8" width="100%">
-        <tr>
-            <th>Poste</th>
-            <th>Joueur</th>
-            <th>Taille / Poids</th>
-            <th>Rôle</th>
-            <th>Dernière note</th>
-        </tr>
+    <!-- SCORE (si match joué ou si prof veut déjà préparer) -->
+    <label>Score (optionnel) :</label><br>
+    <input type="number" name="score_equipe" placeholder="Nous"
+           value="<?= htmlspecialchars($match["score_equipe"]) ?>">
+    <input type="number" name="score_adverse" placeholder="Adversaire"
+           value="<?= htmlspecialchars($match["score_adverse"]) ?>">
+    <br><br>
 
-        <?php foreach ($postes as $p): ?>
-            <?php foreach ($compo as $c): ?>
-                <?php if ($c["id_poste"] == $p["id_poste"] && $c["role"] == "TITULAIRE"): ?>
+    <!-- RÉSULTAT (optionnel si pas encore joué) -->
+    <label>Résultat du match :</label><br>
+    <select name="resultat">
+        <option value="">— Aucun —</option>
+        <option value="VICTOIRE" <?= $match["resultat"] === "VICTOIRE" ? "selected" : "" ?>>Victoire</option>
+        <option value="DEFAITE" <?= $match["resultat"] === "DEFAITE" ? "selected" : "" ?>>Défaite</option>
+        <option value="NUL" <?= $match["resultat"] === "NUL" ? "selected" : "" ?>>Match nul</option>
+    </select>
+    <br><br>
 
-                    <?php 
-                    // Infos joueur
-                    $extra = getPlayerExtraInfo($gestion_sportive, $c["id_joueur"]);
-                    $derniere_note = $extra["evaluations"][0]["evaluation"] ?? "<i>Aucune</i>";
-                    ?>
+    <!-- ÉTAT DU MATCH -->
+    <label>Statut du match :</label><br>
+    <select name="etat" required>
+        <option value="A_PREPARER" <?= $match["etat"] === "A_PREPARER" ? "selected" : "" ?>>À préparer</option>
+        <option value="PREPARE"   <?= $match["etat"] === "PREPARE" ? "selected" : "" ?>>Préparé</option>
+        <option value="JOUE"      <?= $match["etat"] === "JOUE" ? "selected" : "" ?>>Joué</option>
+    </select>
+    <br><br>
 
-                    <tr>
-                        <td><?= $p["libelle"] ?></td>
-                        <td><?= $c["nom"] . " " . $c["prenom"] ?></td>
-                        <td><?= $c["taille"] ?>cm / <?= $c["poids"] ?>kg</td>
-                        <td>TITULAIRE</td>
-                        <td><?= $derniere_note ?></td>
-                    </tr>
+    <button type="submit" class="btn-primary">💾 Enregistrer les modifications</button>
+    <a href="liste_matchs.php" class="btn-secondary" style="margin-left:10px;">↩ Retour</a>
 
-                <?php endif; ?>
-            <?php endforeach; ?>
-        <?php endforeach; ?>
-    </table>
-
-    <br>
-
-    <h4>Remplaçants</h4>
-    <table border="1" cellpadding="8" width="100%">
-        <tr>
-            <th>Joueur</th>
-            <th>Poste</th>
-            <th>Taille / Poids</th>
-            <th>Dernière note</th>
-        </tr>
-
-        <?php foreach ($compo as $c): ?>
-            <?php if ($c["role"] == "REMPLACANT"): ?>
-
-                <?php 
-                $extra = getPlayerExtraInfo($gestion_sportive, $c["id_joueur"]);
-                $derniere_note = $extra["evaluations"][0]["evaluation"] ?? "<i>Aucune</i>";
-                ?>
-
-                <tr>
-                    <td><?= $c["nom"] . " " . $c["prenom"] ?></td>
-                    <td><?= $c["poste_libelle"] ?></td>
-                    <td><?= $c["taille"] ?>cm / <?= $c["poids"] ?>kg</td>
-                    <td><?= $derniere_note ?></td>
-                </tr>
-
-            <?php endif; ?>
-        <?php endforeach; ?>
-    </table>
-
-<?php endif; ?>
-
-<hr>
-
-<h3>Actions</h3>
-
-<!-- Modifier la compo -->
-<a class="btn" href="../feuille_match/composition.php?id_match=<?= $id_match ?>">
-    ✏ Modifier la composition
-</a>
-
-<!-- Évaluer (si match passé) -->
-<?php if ($match["date_heure"] < date("Y-m-d H:i:s")): ?>
-    <a class="btn" href="../feuille_match/evaluation.php?id_match=<?= $id_match ?>">
-        ⭐ Évaluer les joueurs
-    </a>
-<?php endif; ?>
-
-<!-- Historique -->
-<a class="btn" href="../feuille_match/historique_feuille.php">
-    📜 Historique des compositions
-</a>
+</form>
 
 <?php include "../includes/footer.php"; ?>

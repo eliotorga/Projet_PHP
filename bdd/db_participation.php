@@ -1,158 +1,203 @@
 <?php
-/***************************************************
- * db_participation.php
- * Fonctions SQL pour la feuille de match,
- * la participation des joueurs et les évaluations
- ***************************************************/
-
-require_once __DIR__ . "/../includes/config.php";
-
+/**
+ * ------------------------------------------------------------
+ *  Fichier : db_participation.php (Version PRO adaptée SQL)
+ *  Objectif : Gestion de la table participation + statistiques
+ * ------------------------------------------------------------
+ */
 
 
-
-
-/****************************************
- * 2) PARTICIPATION DES JOUEURS À UN MATCH
- ****************************************/
-
-// Récupérer tous les joueurs sélectionnés pour un match
+/**************************************************************
+ * 1️⃣ Récupérer la participation d’un match
+ **************************************************************/
 function getParticipationByMatch(PDO $db, int $id_match) {
-    $sql = "SELECT p.*, 
-                   j.nom, j.prenom,
-                   t.libelle AS poste_libelle
-            FROM participation p
-            JOIN joueur j ON j.id_joueur = p.id_joueur
-            LEFT JOIN poste t ON t.id_poste = p.id_poste
-            WHERE p.id_match = ?
-            ORDER BY p.role DESC, t.libelle ASC";
-    
+
+    $sql = "
+        SELECT 
+            pa.*,
+            j.nom, j.prenom, j.taille_cm, j.poids_kg,
+            p.libelle AS poste_libelle
+        FROM participation pa
+        JOIN joueur j ON j.id_joueur = pa.id_joueur
+        LEFT JOIN poste p ON p.id_poste = pa.id_poste
+        WHERE pa.id_match = ?
+        ORDER BY pa.role DESC, p.libelle ASC
+    ";
+
     $stmt = $db->prepare($sql);
     $stmt->execute([$id_match]);
-    return $stmt->fetchAll();
-}
 
-// Vérifie si un joueur est déjà sélectionné pour un match
-function isPlayerInMatch(PDO $db, int $id_match, int $id_joueur) {
-    $sql = "SELECT COUNT(*) AS total
-            FROM participation
-            WHERE id_match = ? AND id_joueur = ?";
-    $stmt = $db->prepare($sql);
-    $stmt->execute([$id_match, $id_joueur]);
-    return $stmt->fetch()["total"] > 0;
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 
+/**************************************************************
+ * 2️⃣ Ajouter une participation
+ **************************************************************/
+function addParticipation(PDO $db, array $data) {
 
-/****************************************
- * 3) AJOUT DE PARTICIPANTS AU MATCH
- ****************************************/
+    $sql = "
+        INSERT INTO participation (id_match, id_joueur, id_poste, role, evaluation)
+        VALUES (:id_match, :id_joueur, :id_poste, :role, :evaluation)
+    ";
 
-// Ajouter un joueur comme TITULAIRE ou REMPLACANT
-function addParticipation(PDO $db, int $id_match, int $id_joueur, $role, $id_poste = null) {
-    $sql = "INSERT INTO participation (id_match, id_joueur, id_poste, role)
-            VALUES (:id_match, :id_joueur, :poste, :role)";
-    
     $stmt = $db->prepare($sql);
-    $stmt->execute([
-        ":id_match"  => $id_match,
-        ":id_joueur" => $id_joueur,
-        ":poste"     => $id_poste,
-        ":role"      => $role
+
+    return $stmt->execute([
+        ":id_match"   => $data["id_match"],
+        ":id_joueur"  => $data["id_joueur"],
+        ":id_poste"   => $data["id_poste"],
+        ":role"       => $data["role"],   // 'TITULAIRE' ou 'REMPLACANT'
+        ":evaluation" => $data["evaluation"]
     ]);
 }
 
 
-
-// Supprime toutes les participations d'un match (utile pour recharger une feuille)
+/**************************************************************
+ * 3️⃣ Effacer toute la compo d’un match
+ **************************************************************/
 function clearParticipation(PDO $db, int $id_match) {
     $stmt = $db->prepare("DELETE FROM participation WHERE id_match = ?");
-    $stmt->execute([$id_match]);
+    return $stmt->execute([$id_match]);
 }
 
 
-
-/****************************************
- * 4) ÉVALUATION DES JOUEURS APRÈS MATCH
- ****************************************/
-
+/**************************************************************
+ * 4️⃣ Mettre à jour une évaluation
+ **************************************************************/
 function updateEvaluation(PDO $db, int $id_match, int $id_joueur, int $note) {
-    $sql = "UPDATE participation
-            SET evaluation = :note
-            WHERE id_match = :match AND id_joueur = :joueur";
+
+    $sql = "
+        UPDATE participation
+        SET evaluation = :note
+        WHERE id_match = :id_match AND id_joueur = :id_joueur
+    ";
+
     $stmt = $db->prepare($sql);
-    $stmt->execute([
-        ":note"   => $note,
-        ":match"  => $id_match,
-        ":joueur" => $id_joueur
+
+    return $stmt->execute([
+        ":note"      => $note,
+        ":id_match"  => $id_match,
+        ":id_joueur" => $id_joueur
     ]);
 }
 
 
-
-/****************************************
- * 5) STATISTIQUES JOUEUR (utiles pour stats)
- ****************************************/
-
-// Nombre de titularisations
+/**************************************************************
+ * 5️⃣ Nombre de titularisations
+ **************************************************************/
 function getNbTitularisations(PDO $db, int $id_joueur) {
-    $sql = "SELECT COUNT(*) AS total
-            FROM participation
-            WHERE id_joueur = ? AND role = 'TITULAIRE'";
-    $stmt = $db->prepare($sql);
+    $stmt = $db->prepare("
+        SELECT COUNT(*)
+        FROM participation
+        WHERE id_joueur = ? AND role = 'TITULAIRE'
+    ");
     $stmt->execute([$id_joueur]);
-    return $stmt->fetch()["total"];
+    return $stmt->fetchColumn();
 }
 
-// Nombre de remplacements
+
+/**************************************************************
+ * 6️⃣ Nombre de remplacements
+ **************************************************************/
 function getNbRemplacements(PDO $db, int $id_joueur) {
-    $sql = "SELECT COUNT(*) AS total
-            FROM participation
-            WHERE id_joueur = ? AND role = 'REMPLACANT'";
-    $stmt = $db->prepare($sql);
+    $stmt = $db->prepare("
+        SELECT COUNT(*)
+        FROM participation
+        WHERE id_joueur = ? AND role = 'REMPLACANT'
+    ");
     $stmt->execute([$id_joueur]);
-    return $stmt->fetch()["total"];
+    return $stmt->fetchColumn();
 }
 
-// Moyenne des évaluations
+
+/**************************************************************
+ * 7️⃣ Moyenne des évaluations
+ **************************************************************/
 function getAvgNote(PDO $db, int $id_joueur) {
-    $sql = "SELECT AVG(evaluation) AS moyenne
-            FROM participation
-            WHERE id_joueur = ? AND evaluation IS NOT NULL";
-    $stmt = $db->prepare($sql);
+    $stmt = $db->prepare("
+        SELECT AVG(evaluation)
+        FROM participation
+        WHERE id_joueur = ? AND evaluation IS NOT NULL
+    ");
     $stmt->execute([$id_joueur]);
-    return $stmt->fetch()["moyenne"];
+    return $stmt->fetchColumn();
 }
 
-// Nombre de matchs consécutifs joués
-function getNbMatchsConsecutifs(PDO $db, int $id_joueur) {
-    // On récupère uniquement les matchs joués, triés chronologiquement
-    $sql = "SELECT m.id_match, m.etat
-            FROM participation p
-            JOIN matchs m ON m.id_match = p.id_match
-            WHERE p.id_joueur = ? AND m.etat = 'JOUE'
-            ORDER BY m.date_heure DESC";
+
+/**************************************************************
+ * 8️⃣ Poste préféré (meilleure moyenne en TITU)
+ **************************************************************/
+function getBestPoste(PDO $db, int $id_joueur) {
+
+    $sql = "
+        SELECT p.libelle, AVG(pa.evaluation) AS moyenne
+        FROM participation pa
+        JOIN poste p ON p.id_poste = pa.id_poste
+        WHERE pa.id_joueur = ?
+          AND pa.role = 'TITULAIRE'
+          AND pa.evaluation IS NOT NULL
+        GROUP BY p.id_poste
+        ORDER BY moyenne DESC
+        LIMIT 1
+    ";
 
     $stmt = $db->prepare($sql);
     $stmt->execute([$id_joueur]);
-    $matches = $stmt->fetchAll();
-
-    return count($matches); // Simple : tous les matchs joués consécutivement
+    return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-// Pourcentage de victoires quand le joueur participe
+
+/**************************************************************
+ * 9️⃣ Série de matchs consécutifs
+ **************************************************************/
+function getSerieConsecutive(PDO $db, int $id_joueur) {
+
+    $sql = "
+        SELECT m.resultat
+        FROM participation pa
+        JOIN matchs m ON m.id_match = pa.id_match
+        WHERE pa.id_joueur = ?
+        ORDER BY m.date_heure DESC
+    ";
+
+    $stmt = $db->prepare($sql);
+    $stmt->execute([$id_joueur]);
+
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $serie = 0;
+
+    foreach ($rows as $r) {
+        if ($r["resultat"] === null) break;
+        $serie++;
+    }
+
+    return $serie;
+}
+
+
+/**************************************************************
+ * 🔟 Pourcentage de victoires sur matchs joués
+ **************************************************************/
 function getWinRate(PDO $db, int $id_joueur) {
-    $sql = "SELECT 
-                SUM(m.resultat = 'VICTOIRE') AS wins,
-                COUNT(*) AS total
-            FROM participation p
-            JOIN matchs m ON m.id_match = p.id_match
-            WHERE p.id_joueur = ? AND m.etat = 'JOUE'";
+
+    $sql = "
+        SELECT
+            SUM(CASE WHEN m.resultat = 'VICTOIRE' THEN 1 ELSE 0 END) AS wins,
+            COUNT(*) AS total
+        FROM participation pa
+        JOIN matchs m ON m.id_match = pa.id_match
+        WHERE pa.id_joueur = ?
+          AND m.resultat IS NOT NULL
+    ";
+
     $stmt = $db->prepare($sql);
     $stmt->execute([$id_joueur]);
-    $res = $stmt->fetch();
 
-    if ($res["total"] == 0) return null;
-    return ($res["wins"] / $res["total"]) * 100;
+    $res = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    return ($res["total"] > 0) ? ($res["wins"] / $res["total"]) * 100 : 0;
 }
 
 ?>
