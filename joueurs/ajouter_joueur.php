@@ -3,8 +3,6 @@ require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";
 require_once __DIR__ . "/../bdd/db_joueur.php";
 
-include __DIR__ . "/../includes/header.php";
-
 // Récupération des statuts pour le <select>
 $statuts = getAllStatuts($gestion_sportive);
 
@@ -61,7 +59,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             insertPlayer($gestion_sportive, $data);
             $_SESSION['success_message'] = "✅ Joueur ajouté avec succès !";
             header("Location: liste_joueurs.php");
-            exit;
+            exit; // IMPORTANT : arrêter l'exécution après la redirection
         } catch (PDOException $e) {
             $erreur = "Erreur lors de l'ajout du joueur : " . $e->getMessage();
         }
@@ -69,6 +67,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $erreur = implode("<br>", $errors);
     }
 }
+
+// INCLURE LE HEADER APRÈS TOUS LES TRAITEMENTS PHP QUI PEUVENT UTILISER header()
+include __DIR__ . "/../includes/header.php";
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -466,31 +467,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             font-size: 1.8rem;
         }
     }
-
-    /* =============================
-       VALIDATION VISUELLE
-    ============================= */
-    .validation-feedback {
-        font-size: 0.85rem;
-        margin-top: 5px;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        opacity: 0;
-        transition: var(--transition);
-    }
-
-    .validation-feedback.visible {
-        opacity: 1;
-    }
-
-    .validation-feedback.valid {
-        color: var(--secondary);
-    }
-
-    .validation-feedback.invalid {
-        color: var(--danger);
-    }
     </style>
 </head>
 <body>
@@ -680,39 +656,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     <?php endforeach; ?>
                 </div>
 
-                <!-- PRÉVISUALISATION -->
-                <div class="preview-card" id="preview">
-                    <div class="preview-title">
-                        <i class="fas fa-eye"></i>
-                        <h3>Aperçu du joueur</h3>
-                    </div>
-                    <div class="preview-content">
-                        <div class="preview-item">
-                            <div class="preview-label">Joueur</div>
-                            <div class="preview-value" id="preview-nom">-</div>
-                        </div>
-                        <div class="preview-item">
-                            <div class="preview-label">Licence</div>
-                            <div class="preview-value" id="preview-licence">-</div>
-                        </div>
-                        <div class="preview-item">
-                            <div class="preview-label">Âge</div>
-                            <div class="preview-value" id="preview-age">-</div>
-                        </div>
-                        <div class="preview-item">
-                            <div class="preview-label">Taille/Poids</div>
-                            <div class="preview-value" id="preview-physique">-</div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- ACTIONS -->
                 <div class="form-actions">
                     <button type="submit" class="btn btn-submit">
                         <i class="fas fa-save"></i> Enregistrer le joueur
                     </button>
                     
-                    <button type="reset" class="btn btn-reset" onclick="resetForm()">
+                    <button type="reset" class="btn btn-reset">
                         <i class="fas fa-redo"></i> Réinitialiser
                     </button>
                     
@@ -726,221 +676,53 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     <script>
     // =============================
-    // VALIDATION EN TEMPS RÉEL
+    // VALIDATION SIMPLIFIÉE
     // =============================
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('playerForm');
-        const inputs = form.querySelectorAll('input, select');
-        
-        // Fonction de validation
-        function validateField(field) {
-            const value = field.value.trim();
-            const name = field.name;
-            const feedback = document.getElementById(`${name}-feedback`);
-            
-            if (!feedback) return;
-            
-            feedback.classList.remove('valid', 'invalid', 'visible');
-            
-            // Validation spécifique par champ
-            let isValid = true;
-            let message = '';
-            
-            switch(name) {
-                case 'nom':
-                case 'prenom':
-                    if (value.length < 2) {
-                        isValid = false;
-                        message = 'Minimum 2 caractères';
-                    } else if (value.length > 50) {
-                        isValid = false;
-                        message = 'Maximum 50 caractères';
-                    } else {
-                        isValid = true;
-                        message = '✓ Format valide';
-                    }
-                    break;
-                    
-                case 'num_licence':
-                    if (value && !/^[A-Za-z0-9]+$/.test(value)) {
-                        isValid = false;
-                        message = 'Caractères alphanumériques uniquement';
-                    } else {
-                        isValid = true;
-                        message = value ? '✓ Licence valide' : '';
-                    }
-                    break;
-                    
-                case 'date_naissance':
-                    if (value) {
-                        const birthDate = new Date(value);
-                        const today = new Date();
-                        const age = today.getFullYear() - birthDate.getFullYear();
-                        
-                        if (age < 6) {
-                            isValid = false;
-                            message = 'Minimum 6 ans requis';
-                        } else if (age > 60) {
-                            isValid = false;
-                            message = 'Vérifiez la date';
-                        } else {
-                            isValid = true;
-                            message = `✓ ${age} ans`;
-                        }
-                    }
-                    break;
-                    
-                case 'taille_cm':
-                    if (value) {
-                        const taille = parseInt(value);
-                        if (taille < 100 || taille > 250) {
-                            isValid = false;
-                            message = 'Entre 100 et 250 cm';
-                        } else {
-                            isValid = true;
-                            message = `✓ ${taille} cm`;
-                        }
-                    }
-                    break;
-                    
-                case 'poids_kg':
-                    if (value) {
-                        const poids = parseFloat(value);
-                        if (poids < 30 || poids > 150) {
-                            isValid = false;
-                            message = 'Entre 30 et 150 kg';
-                        } else {
-                            isValid = true;
-                            message = `✓ ${poids} kg`;
-                        }
-                    }
-                    break;
-                    
-                case 'id_statut':
-                    if (!value) {
-                        isValid = false;
-                        message = 'Sélectionnez un statut';
-                    } else {
-                        isValid = true;
-                        message = '✓ Statut sélectionné';
-                    }
-                    break;
-            }
-            
-            // Appliquer le feedback
-            if (message) {
-                feedback.textContent = message;
-                feedback.classList.add('visible');
-                feedback.classList.add(isValid ? 'valid' : 'invalid');
-                field.classList.toggle('valid', isValid);
-                field.classList.toggle('invalid', !isValid);
-            }
-            
-            return isValid;
-        }
-        
-        // Événements de validation
-        inputs.forEach(input => {
-            input.addEventListener('blur', () => validateField(input));
-            input.addEventListener('input', () => {
-                validateField(input);
-                updatePreview();
-            });
-        });
         
         // Validation du formulaire
         form.addEventListener('submit', function(e) {
             let formIsValid = true;
+            const requiredFields = form.querySelectorAll('[required]');
             
-            inputs.forEach(input => {
-                if (!validateField(input)) {
+            // Réinitialiser les styles d'erreur
+            document.querySelectorAll('.form-input, .form-select').forEach(input => {
+                input.classList.remove('invalid');
+            });
+            
+            // Valider les champs requis
+            requiredFields.forEach(input => {
+                if (!input.value.trim()) {
                     formIsValid = false;
-                    if (input.required && !input.value.trim()) {
+                    input.classList.add('invalid');
+                    
+                    // Focus sur le premier champ invalide
+                    if (formIsValid === false) {
                         input.focus();
+                        formIsValid = null; // Pour ne pas focus sur tous les champs
                     }
                 }
             });
             
             if (!formIsValid) {
                 e.preventDefault();
-                showNotification('Veuillez corriger les erreurs dans le formulaire', 'error');
+                showNotification('Veuillez remplir tous les champs obligatoires', 'error');
             }
+        });
+        
+        // Validation en temps réel pour les champs requis
+        const requiredInputs = form.querySelectorAll('[required]');
+        requiredInputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                if (!this.value.trim()) {
+                    this.classList.add('invalid');
+                } else {
+                    this.classList.remove('invalid');
+                }
+            });
         });
     });
-    
-    // =============================
-    // PRÉVISUALISATION
-    // =============================
-    function updatePreview() {
-        const nom = document.querySelector('input[name="nom"]').value;
-        const prenom = document.querySelector('input[name="prenom"]').value;
-        const licence = document.querySelector('input[name="num_licence"]').value;
-        const naissance = document.querySelector('input[name="date_naissance"]').value;
-        const taille = document.querySelector('input[name="taille_cm"]').value;
-        const poids = document.querySelector('input[name="poids_kg"]').value;
-        
-        const preview = document.getElementById('preview');
-        
-        // Afficher/masquer la prévisualisation
-        if (nom || prenom || licence || naissance || taille || poids) {
-            preview.style.display = 'block';
-            
-            // Mettre à jour les valeurs
-            document.getElementById('preview-nom').textContent = 
-                (prenom && nom) ? `${prenom} ${nom}` : '-';
-            
-            document.getElementById('preview-licence').textContent = 
-                licence || '-';
-            
-            // Calculer l'âge
-            if (naissance) {
-                const birthDate = new Date(naissance);
-                const today = new Date();
-                let age = today.getFullYear() - birthDate.getFullYear();
-                const monthDiff = today.getMonth() - birthDate.getMonth();
-                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                    age--;
-                }
-                document.getElementById('preview-age').textContent = `${age} ans`;
-            } else {
-                document.getElementById('preview-age').textContent = '-';
-            }
-            
-            // Taille/Poids
-            if (taille || poids) {
-                const tailleText = taille ? `${taille} cm` : '';
-                const poidsText = poids ? `${poids} kg` : '';
-                const separator = (taille && poids) ? ' / ' : '';
-                document.getElementById('preview-physique').textContent = 
-                    `${tailleText}${separator}${poidsText}`;
-            } else {
-                document.getElementById('preview-physique').textContent = '-';
-            }
-        } else {
-            preview.style.display = 'none';
-        }
-    }
-    
-    // =============================
-    // RÉINITIALISATION
-    // =============================
-    function resetForm() {
-        const preview = document.getElementById('preview');
-        preview.style.display = 'none';
-        
-        // Réinitialiser les feedbacks
-        document.querySelectorAll('.validation-feedback').forEach(fb => {
-            fb.classList.remove('visible', 'valid', 'invalid');
-            fb.textContent = '';
-        });
-        
-        // Réinitialiser les classes des inputs
-        document.querySelectorAll('.form-input, .form-select').forEach(input => {
-            input.classList.remove('valid', 'invalid');
-        });
-        
-        showNotification('Formulaire réinitialisé', 'info');
-    }
     
     // =============================
     // NOTIFICATIONS
@@ -952,9 +734,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: ${type === 'error' ? 'var(--danger)' : 
-                        type === 'success' ? 'var(--secondary)' : 
-                        type === 'warning' ? 'var(--accent)' : 'var(--info)'};
+            background: ${type === 'error' ? '#e74c3c' : 
+                        type === 'success' ? '#2ecc71' : 
+                        '#3498db'};
             color: white;
             padding: 15px 25px;
             border-radius: 12px;
@@ -967,8 +749,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         `;
         
         const icon = type === 'error' ? 'fa-exclamation-circle' :
-                    type === 'success' ? 'fa-check-circle' :
-                    type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+                    type === 'success' ? 'fa-check-circle' : 'fa-info-circle';
         
         notification.innerHTML = `
             <i class="fas ${icon}"></i>
@@ -982,37 +763,25 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             notification.style.animation = 'slideOutRight 0.5s ease';
             setTimeout(() => notification.remove(), 500);
         }, 5000);
-        
-        // Ajouter les animations CSS
-        if (!document.querySelector('#notification-styles')) {
-            const style = document.createElement('style');
-            style.id = 'notification-styles';
-            style.textContent = `
-                @keyframes slideInRight {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-                @keyframes slideOutRight {
-                    from { transform: translateX(0); opacity: 1; }
-                    to { transform: translateX(100%); opacity: 0; }
-                }
-            `;
-            document.head.appendChild(style);
-        }
     }
     
-    // =============================
-    // AUTO-COMPLÉTION DATE
-    // =============================
-    document.addEventListener('DOMContentLoaded', function() {
-        const dateInput = document.querySelector('input[name="date_naissance"]');
-        if (dateInput && !dateInput.value) {
-            // Suggérer une date pour un adulte (18-25 ans)
-            const suggestedDate = new Date();
-            suggestedDate.setFullYear(suggestedDate.getFullYear() - 20);
-            dateInput.value = suggestedDate.toISOString().split('T')[0];
+    // Ajouter les animations CSS
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
-    });
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        .invalid {
+            border-color: #e74c3c !important;
+            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1) !important;
+        }
+    `;
+    document.head.appendChild(style);
     </script>
 </body>
 </html>
