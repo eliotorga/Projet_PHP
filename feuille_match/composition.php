@@ -718,7 +718,7 @@ include "../includes/header.php";
         </div>
 
         <!-- GRID PRINCIPALE -->
-        <form method="POST" action="enregistrer_composition.php" id="compositionForm">
+        <form method="POST" action="sauvegarde_compo.php" id="compositionForm">
             <input type="hidden" name="id_match" value="<?= $id_match ?>">
             
             <div class="main-grid">

@@ -37,6 +37,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $_SESSION["user_id"] = $login;
         $_SESSION["last_activity"] = time();
 
+        // Redirection avec message de succès
+        $_SESSION['login_success'] = true;
         header("Location: index.php");
         exit;
     }
@@ -50,31 +52,37 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <title>Connexion – Coach Manager Pro</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Open+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Open+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 
     <style>
     /* =============================
-       VARIABLES & RESET
+       VARIABLES & RESET (Nouvelle palette)
     ============================= */
     :root {
         --primary: #1e7a3c;
         --primary-dark: #145c2f;
+        --primary-light: #2ecc71;
         --secondary: #2ecc71;
         --accent: #f39c12;
         --danger: #e74c3c;
         --warning: #e67e22;
         --info: #3498db;
-        --light: #ecf0f1;
-        --dark: #0c2918;
-        --darker: #071a10;
+        --light: #f8fafc;
+        --dark: #0f172a;
+        --dark-2: #1e293b;
         --grass: #2E8B57;
         --grass-dark: #1E6B47;
-        --field-lines: #FFFFFF;
-        --jersey-home: #DC143C;
-        --jersey-away: #4169E1;
-        --shadow: 0 15px 35px rgba(0,0,0,0.3);
-        --radius: 16px;
+        --field-lines: rgba(255, 255, 255, 0.15);
+        --jersey-home: #1e7a3c;
+        --jersey-away: #2ecc71;
+        --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+        --radius-lg: 20px;
+        --radius-md: 12px;
+        --radius-sm: 8px;
         --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        --glass: rgba(255, 255, 255, 0.05);
+        --glass-border: rgba(255, 255, 255, 0.1);
     }
 
     * {
@@ -85,7 +93,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     body {
-        background: linear-gradient(135deg, var(--darker) 0%, var(--dark) 100%);
+        background: linear-gradient(135deg, var(--dark) 0%, var(--dark-2) 100%);
         min-height: 100vh;
         display: flex;
         align-items: center;
@@ -93,110 +101,186 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         padding: 20px;
         position: relative;
         overflow-x: hidden;
+        color: white;
     }
 
     /* =============================
-       BACKGROUND FOOTBALL
+       BACKGROUND ANIMATIONS
     ============================= */
-    .pitch-pattern {
+    .bg-pattern {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
         background: 
-            linear-gradient(45deg, transparent 48%, rgba(255,255,255,0.03) 50%, transparent 52%),
-            linear-gradient(-45deg, transparent 48%, rgba(255,255,255,0.03) 50%, transparent 52%);
-        background-size: 80px 80px;
+            radial-gradient(circle at 20% 30%, rgba(46, 139, 87, 0.15) 0%, transparent 50%),
+            radial-gradient(circle at 80% 70%, rgba(30, 122, 60, 0.1) 0%, transparent 50%);
+        z-index: -3;
+    }
+
+    .grid-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: 
+            linear-gradient(90deg, var(--field-lines) 1px, transparent 1px),
+            linear-gradient(var(--field-lines) 1px, transparent 1px);
+        background-size: 50px 50px;
+        background-position: center center;
         z-index: -2;
-        opacity: 0.2;
+        opacity: 0.1;
     }
 
-    .stadium-effect {
+    .floating-shapes {
         position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 120%;
-        height: 120%;
-        background: radial-gradient(circle at center, 
-            transparent 30%, 
-            rgba(46, 139, 87, 0.1) 70%, 
-            transparent 100%
-        );
+        width: 100%;
+        height: 100%;
         z-index: -1;
     }
 
-    .floating-ball {
-        position: fixed;
-        width: 60px;
-        height: 60px;
-        background: radial-gradient(circle at 30% 30%, #fff, #aaa);
+    .shape {
+        position: absolute;
         border-radius: 50%;
-        animation: floatBall 8s ease-in-out infinite;
-        box-shadow: 
-            inset -5px -5px 10px rgba(0,0,0,0.3),
-            inset 2px 2px 5px rgba(255,255,255,0.5),
-            0 5px 15px rgba(0,0,0,0.3);
-        z-index: -1;
+        background: radial-gradient(circle, var(--primary-light) 0%, transparent 70%);
+        opacity: 0.1;
+        animation: floatShape 20s infinite linear;
     }
 
-    .ball-1 {
-        top: 20%;
+    .shape-1 {
+        width: 300px;
+        height: 300px;
+        top: 10%;
         left: 10%;
         animation-delay: 0s;
     }
 
-    .ball-2 {
-        top: 60%;
-        right: 15%;
-        animation-delay: 2s;
-        width: 40px;
-        height: 40px;
+    .shape-2 {
+        width: 200px;
+        height: 200px;
+        bottom: 15%;
+        right: 10%;
+        background: radial-gradient(circle, var(--secondary) 0%, transparent 70%);
+        animation-delay: 5s;
+        animation-duration: 25s;
     }
 
-    .ball-3 {
-        bottom: 20%;
-        left: 20%;
-        animation-delay: 4s;
-        width: 30px;
-        height: 30px;
+    .shape-3 {
+        width: 150px;
+        height: 150px;
+        top: 50%;
+        left: 80%;
+        background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+        animation-delay: 10s;
+        animation-duration: 30s;
     }
 
-    @keyframes floatBall {
-        0%, 100% { 
-            transform: translate(0, 0) rotate(0deg); 
+    @keyframes floatShape {
+        0% {
+            transform: translate(0, 0) rotate(0deg);
         }
-        33% { 
-            transform: translate(30px, -40px) rotate(120deg); 
+        25% {
+            transform: translate(100px, 50px) rotate(90deg);
         }
-        66% { 
-            transform: translate(-20px, 20px) rotate(240deg); 
+        50% {
+            transform: translate(-50px, 100px) rotate(180deg);
+        }
+        75% {
+            transform: translate(-100px, -50px) rotate(270deg);
+        }
+        100% {
+            transform: translate(0, 0) rotate(360deg);
         }
     }
 
     /* =============================
-       MAIN CONTAINER
+       FOOTBALL ELEMENTS
+    ============================= */
+    .football-icon {
+        position: fixed;
+        width: 80px;
+        height: 80px;
+        background: radial-gradient(circle at 30% 30%, #fff, #aaa);
+        border-radius: 50%;
+        box-shadow: 
+            inset -5px -5px 10px rgba(0,0,0,0.3),
+            inset 2px 2px 5px rgba(255,255,255,0.5),
+            0 10px 20px rgba(0,0,0,0.4);
+        z-index: -1;
+        animation: bounceBall 15s infinite ease-in-out;
+    }
+
+    .ball-1 {
+        top: 15%;
+        left: 5%;
+        animation-delay: 0s;
+    }
+
+    .ball-2 {
+        bottom: 20%;
+        right: 8%;
+        animation-delay: 7s;
+        width: 60px;
+        height: 60px;
+    }
+
+    @keyframes bounceBall {
+        0%, 100% { 
+            transform: translate(0, 0) scale(1); 
+        }
+        25% { 
+            transform: translate(40px, -30px) scale(1.1); 
+        }
+        50% { 
+            transform: translate(-30px, 20px) scale(1); 
+        }
+        75% { 
+            transform: translate(-20px, -20px) scale(0.95); 
+        }
+    }
+
+    /* =============================
+       MAIN CONTAINER (Glassmorphism)
     ============================= */
     .login-container {
         display: grid;
-        grid-template-columns: 1.1fr 0.9fr;
-        max-width: 1100px;
+        grid-template-columns: 1.2fr 0.8fr;
+        max-width: 1200px;
         width: 100%;
-        gap: 0;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(15px);
-        border-radius: var(--radius);
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(20px);
+        border-radius: var(--radius-lg);
         overflow: hidden;
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        box-shadow: var(--shadow);
-        animation: slideIn 0.8s ease-out;
+        border: 1px solid var(--glass-border);
+        box-shadow: 
+            var(--shadow),
+            inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+        animation: slideIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        position: relative;
+    }
+
+    .login-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.05) 0%,
+            transparent 50%,
+            rgba(255, 255, 255, 0.02) 100%
+        );
+        pointer-events: none;
     }
 
     @keyframes slideIn {
         from { 
             opacity: 0; 
-            transform: translateY(50px) scale(0.95); 
+            transform: translateY(60px) scale(0.95); 
         }
         to { 
             opacity: 1; 
@@ -205,16 +289,206 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     /* =============================
-       LEFT PANEL - FOOTBALL THEME
+       LEFT PANEL - BRAND & FEATURES
     ============================= */
-    .football-panel {
-        background: linear-gradient(145deg, rgba(12, 41, 24, 0.95), rgba(26, 58, 38, 0.95));
-        padding: 50px 40px;
+    .brand-panel {
+        background: linear-gradient(
+            145deg,
+            rgba(15, 23, 42, 0.95) 0%,
+            rgba(30, 41, 59, 0.9) 100%
+        );
+        padding: 60px 50px;
         position: relative;
         overflow: hidden;
     }
 
-    .football-panel::before {
+    .brand-panel::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 150px;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(30, 122, 60, 0.1));
+        pointer-events: none;
+    }
+
+    .brand-header {
+        margin-bottom: 50px;
+    }
+
+    .brand-logo {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 25px;
+    }
+
+    .logo-circle {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, var(--jersey-home), var(--jersey-away));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        box-shadow: 
+            0 15px 35px rgba(0, 0, 0, 0.4),
+            inset 0 1px 1px rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .logo-circle::before {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.1) 0%,
+            transparent 100%
+        );
+    }
+
+    .logo-text h1 {
+        font-size: 32px;
+        font-weight: 800;
+        background: linear-gradient(to right, #fff, var(--primary-light));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        line-height: 1.2;
+        letter-spacing: 0.5px;
+    }
+
+    .logo-text .tagline {
+        font-size: 15px;
+        color: rgba(255, 255, 255, 0.7);
+        margin-top: 8px;
+        font-weight: 300;
+        letter-spacing: 0.5px;
+    }
+
+    .brand-description {
+        font-size: 16px;
+        line-height: 1.7;
+        margin-bottom: 50px;
+        color: rgba(255, 255, 255, 0.85);
+        max-width: 550px;
+        font-weight: 300;
+    }
+
+    .features-section h3 {
+        font-size: 20px;
+        font-weight: 600;
+        color: white;
+        margin-bottom: 30px;
+        position: relative;
+        display: inline-block;
+    }
+
+    .features-section h3::after {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        left: 0;
+        width: 50px;
+        height: 3px;
+        background: linear-gradient(90deg, var(--primary), var(--secondary));
+        border-radius: 2px;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+
+    .feature-card {
+        background: var(--glass);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-md);
+        padding: 22px;
+        transition: var(--transition);
+        backdrop-filter: blur(10px);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .feature-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, 
+            transparent, 
+            rgba(255, 255, 255, 0.05), 
+            transparent
+        );
+        transition: 0.6s;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(46, 204, 113, 0.3);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .feature-card:hover::before {
+        left: 100%;
+    }
+
+    .feature-icon {
+        width: 45px;
+        height: 45px;
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 15px;
+        font-size: 18px;
+        color: white;
+        box-shadow: 0 8px 20px rgba(30, 122, 60, 0.3);
+    }
+
+    .feature-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: white;
+        margin-bottom: 8px;
+    }
+
+    .feature-desc {
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.7);
+        line-height: 1.5;
+        font-weight: 300;
+    }
+
+    /* =============================
+       RIGHT PANEL - LOGIN FORM
+    ============================= */
+    .form-panel {
+        background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.05) 0%,
+            rgba(255, 255, 255, 0.02) 100%
+        );
+        padding: 60px 50px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        position: relative;
+        backdrop-filter: blur(10px);
+    }
+
+    .form-panel::before {
         content: '';
         position: absolute;
         top: 0;
@@ -222,149 +496,87 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         right: 0;
         height: 4px;
         background: linear-gradient(90deg, var(--jersey-home), var(--jersey-away));
+        box-shadow: 0 2px 10px rgba(30, 122, 60, 0.5);
     }
 
-    .logo-section {
-        margin-bottom: 40px;
-        position: relative;
+    .form-header {
+        margin-bottom: 45px;
     }
 
-    .logo {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        margin-bottom: 15px;
-    }
-
-    .logo-icon {
-        width: 70px;
-        height: 70px;
-        background: linear-gradient(135deg, var(--jersey-home), var(--jersey-away));
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .form-header h2 {
         font-size: 32px;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-        border: 3px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .logo-text h1 {
-        font-size: 28px;
-        font-weight: 800;
-        background: linear-gradient(to right, #ffffff, var(--secondary));
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
-        line-height: 1.2;
-    }
-
-    .logo-text .tagline {
-        font-size: 14px;
-        color: rgba(255, 255, 255, 0.8);
-        margin-top: 5px;
-    }
-
-    .welcome-message {
-        font-size: 16px;
-        line-height: 1.6;
-        margin-bottom: 40px;
-        color: rgba(255, 255, 255, 0.9);
-        max-width: 500px;
-    }
-
-    .features-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-    }
-
-    .feature-card {
-        background: rgba(255, 255, 255, 0.08);
-        border-radius: 10px;
-        padding: 18px;
-        border-left: 3px solid var(--secondary);
-        transition: var(--transition);
-        backdrop-filter: blur(5px);
-    }
-
-    .feature-card:hover {
-        background: rgba(255, 255, 255, 0.12);
-        transform: translateY(-5px);
-    }
-
-    .feature-icon {
-        color: var(--secondary);
-        font-size: 20px;
-        margin-bottom: 10px;
-    }
-
-    .feature-title {
-        font-size: 14px;
-        font-weight: 600;
+        font-weight: 700;
         color: white;
-        margin-bottom: 5px;
+        margin-bottom: 15px;
+        text-align: center;
     }
 
-    .feature-desc {
-        font-size: 12px;
+    .form-header p {
         color: rgba(255, 255, 255, 0.7);
-        line-height: 1.4;
+        font-size: 16px;
+        text-align: center;
+        max-width: 350px;
+        margin: 0 auto;
+        line-height: 1.6;
+        font-weight: 300;
     }
 
     /* =============================
-       RIGHT PANEL - LOGIN FORM
+       MESSAGES
     ============================= */
-    .login-panel {
-        background: rgba(255, 255, 255, 0.98);
-        padding: 50px 40px;
+    .message-container {
+        margin-bottom: 30px;
+        animation: messageSlide 0.5s ease-out;
+    }
+
+    @keyframes messageSlide {
+        from { 
+            opacity: 0; 
+            transform: translateY(-15px); 
+        }
+        to { 
+            opacity: 1; 
+            transform: translateY(0); 
+        }
+    }
+
+    .message {
+        padding: 18px 22px;
+        border-radius: var(--radius-md);
+        font-size: 14px;
+        font-weight: 500;
         display: flex;
-        flex-direction: column;
-        justify-content: center;
-        position: relative;
+        align-items: center;
+        gap: 12px;
+        border: 1px solid;
+        background: var(--glass);
+        backdrop-filter: blur(10px);
+        animation: pulse 2s infinite;
     }
 
-    .login-panel::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, var(--primary), var(--secondary));
+    @keyframes pulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4); }
+        50% { box-shadow: 0 0 0 6px rgba(231, 76, 60, 0); }
     }
 
-    .login-header {
-        text-align: center;
-        margin-bottom: 40px;
+    .error-message {
+        border-color: rgba(231, 76, 60, 0.3);
+        color: #ff6b6b;
+        background: linear-gradient(
+            135deg,
+            rgba(231, 76, 60, 0.1) 0%,
+            rgba(231, 76, 60, 0.05) 100%
+        );
     }
 
-    .login-header h2 {
-        font-size: 28px;
-        font-weight: 700;
-        color: var(--dark);
-        margin-bottom: 10px;
-        position: relative;
-        display: inline-block;
-    }
-
-    .login-header h2::after {
-        content: '';
-        position: absolute;
-        bottom: -10px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 60px;
-        height: 3px;
-        background: linear-gradient(90deg, var(--primary), var(--secondary));
-        border-radius: 2px;
-    }
-
-    .login-header p {
-        color: #666;
-        font-size: 15px;
-        margin-top: 20px;
-        line-height: 1.5;
+    .warning-message {
+        border-color: rgba(230, 126, 34, 0.3);
+        color: #ffa726;
+        background: linear-gradient(
+            135deg,
+            rgba(230, 126, 34, 0.1) 0%,
+            rgba(230, 126, 34, 0.05) 100%
+        );
     }
 
     /* =============================
@@ -375,65 +587,93 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     .form-group {
-        margin-bottom: 25px;
+        margin-bottom: 30px;
         position: relative;
     }
 
-    .form-group label {
+    .form-label {
         display: block;
         font-size: 13px;
         font-weight: 600;
-        color: var(--dark);
-        margin-bottom: 8px;
+        color: rgba(255, 255, 255, 0.9);
+        margin-bottom: 10px;
         text-transform: uppercase;
         letter-spacing: 1px;
-        padding-left: 5px;
+        padding-left: 8px;
     }
 
-    .input-container {
+    .input-wrapper {
         position: relative;
-        border-radius: 10px;
+        border-radius: var(--radius-sm);
         overflow: hidden;
-        border: 2px solid #e0e0e0;
+        border: 1px solid rgba(255, 255, 255, 0.1);
         transition: var(--transition);
-        background: white;
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
     }
 
-    .input-container:focus-within {
+    .input-wrapper:focus-within {
         border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(30, 122, 60, 0.15);
+        box-shadow: 
+            0 0 0 3px rgba(30, 122, 60, 0.2),
+            0 8px 20px rgba(0, 0, 0, 0.2);
         transform: translateY(-2px);
     }
 
     .input-icon {
         position: absolute;
-        left: 18px;
+        left: 20px;
         top: 50%;
         transform: translateY(-50%);
-        color: #777;
+        color: rgba(255, 255, 255, 0.5);
         font-size: 18px;
-        z-index: 2;
+        z-index: 1;
         transition: var(--transition);
     }
 
-    .input-field {
+    .form-input {
         width: 100%;
-        padding: 16px 20px 16px 50px;
+        padding: 18px 20px 18px 55px;
         border: none;
         font-size: 15px;
-        color: var(--dark);
+        color: white;
         background: transparent;
         font-family: 'Open Sans', sans-serif;
-        font-weight: 500;
+        font-weight: 400;
         outline: none;
+        transition: var(--transition);
     }
 
-    .input-field:focus + .input-icon {
-        color: var(--primary);
+    .form-input::placeholder {
+        color: rgba(255, 255, 255, 0.4);
     }
 
-    .input-field::placeholder {
-        color: #aaa;
+    .form-input:focus {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .form-input:focus + .input-icon {
+        color: var(--primary-light);
+        transform: translateY(-50%) scale(1.1);
+    }
+
+    .password-toggle {
+        position: absolute;
+        right: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.5);
+        cursor: pointer;
+        font-size: 16px;
+        transition: var(--transition);
+        padding: 5px;
+    }
+
+    .password-toggle:hover {
+        color: var(--primary-light);
+        transform: translateY(-50%) scale(1.1);
     }
 
     /* =============================
@@ -441,11 +681,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     ============================= */
     .login-btn {
         width: 100%;
-        padding: 18px;
-        background: linear-gradient(135deg, var(--jersey-home), #c1121f);
+        padding: 20px;
+        background: linear-gradient(135deg, var(--jersey-home), var(--primary-dark));
         color: white;
         border: none;
-        border-radius: 10px;
+        border-radius: var(--radius-sm);
         font-size: 16px;
         font-weight: 700;
         cursor: pointer;
@@ -454,8 +694,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         align-items: center;
         justify-content: center;
         gap: 12px;
-        margin-top: 10px;
-        box-shadow: 0 8px 20px rgba(220, 20, 60, 0.3);
+        margin-top: 20px;
+        box-shadow: 
+            0 12px 25px rgba(30, 122, 60, 0.4),
+            inset 0 1px 1px rgba(255, 255, 255, 0.2);
         position: relative;
         overflow: hidden;
         text-transform: uppercase;
@@ -474,13 +716,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             rgba(255, 255, 255, 0.2), 
             transparent
         );
-        transition: 0.5s;
+        transition: 0.6s;
     }
 
     .login-btn:hover {
-        background: linear-gradient(135deg, #c1121f, var(--jersey-home));
+        background: linear-gradient(135deg, var(--primary-dark), var(--jersey-home));
         transform: translateY(-3px);
-        box-shadow: 0 12px 25px rgba(220, 20, 60, 0.4);
+        box-shadow: 
+            0 18px 35px rgba(30, 122, 60, 0.5),
+            inset 0 1px 1px rgba(255, 255, 255, 0.2);
     }
 
     .login-btn:hover::before {
@@ -492,174 +736,169 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     /* =============================
-       MESSAGES
-    ============================= */
-    .message-container {
-        margin-bottom: 25px;
-        animation: fadeIn 0.5s ease;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .message {
-        padding: 16px 20px;
-        border-radius: 10px;
-        text-align: center;
-        font-size: 14px;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 12px;
-        border: 2px solid;
-        background: white;
-    }
-
-    .error-message {
-        border-color: var(--danger);
-        color: var(--danger);
-        background: linear-gradient(135deg, 
-            rgba(231, 76, 60, 0.08), 
-            rgba(231, 76, 60, 0.04)
-        );
-    }
-
-    .warning-message {
-        border-color: var(--warning);
-        color: var(--warning);
-        background: linear-gradient(135deg, 
-            rgba(230, 126, 34, 0.08), 
-            rgba(230, 126, 34, 0.04)
-        );
-    }
-
-    /* =============================
        FOOTER
     ============================= */
-    .login-footer {
+    .form-footer {
         text-align: center;
-        margin-top: 40px;
-        padding-top: 25px;
-        border-top: 1px solid #eee;
-        color: #666;
+        margin-top: 50px;
+        padding-top: 30px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .security-info {
+        color: rgba(255, 255, 255, 0.6);
         font-size: 13px;
-    }
-
-    .login-footer p {
-        margin-bottom: 8px;
-        line-height: 1.5;
-    }
-
-    .credentials-hint {
-        background: linear-gradient(135deg, 
-            rgba(46, 139, 87, 0.08), 
-            rgba(65, 105, 225, 0.08)
-        );
-        padding: 12px;
-        border-radius: 8px;
-        margin-top: 15px;
-        border: 1px solid rgba(46, 139, 87, 0.2);
-    }
-
-    .credentials-hint h4 {
-        color: var(--dark);
-        margin-bottom: 8px;
-        font-size: 14px;
+        margin-bottom: 15px;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
     }
 
+    .copyright {
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 12px;
+        margin-bottom: 25px;
+    }
+
+    .credentials-hint {
+        background: linear-gradient(
+            135deg,
+            rgba(30, 122, 60, 0.1) 0%,
+            rgba(46, 204, 113, 0.1) 100%
+        );
+        padding: 18px;
+        border-radius: var(--radius-md);
+        border: 1px solid rgba(30, 122, 60, 0.2);
+        backdrop-filter: blur(10px);
+    }
+
+    .credentials-hint h4 {
+        color: white;
+        margin-bottom: 15px;
+        font-size: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        font-weight: 600;
+    }
+
     .credentials-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        margin-top: 10px;
+        gap: 12px;
     }
 
     .cred-item {
         text-align: center;
-        padding: 8px;
-        background: white;
-        border-radius: 6px;
-        border: 1px solid #eee;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: var(--radius-sm);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: var(--transition);
+    }
+
+    .cred-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(46, 204, 113, 0.2);
     }
 
     .cred-label {
         font-size: 11px;
-        color: #777;
-        margin-bottom: 3px;
+        color: rgba(255, 255, 255, 0.6);
+        margin-bottom: 5px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
 
     .cred-value {
         font-weight: 700;
-        color: var(--primary);
-        font-size: 13px;
+        color: var(--primary-light);
+        font-size: 14px;
+        font-family: 'Courier New', monospace;
     }
 
     /* =============================
-       RESPONSIVE
+       RESPONSIVE DESIGN
     ============================= */
-    @media (max-width: 992px) {
+    @media (max-width: 1100px) {
         .login-container {
             grid-template-columns: 1fr;
-            max-width: 500px;
+            max-width: 600px;
         }
         
-        .football-panel, .login-panel {
-            padding: 40px 30px;
+        .brand-panel, .form-panel {
+            padding: 50px 40px;
         }
         
         .features-grid {
             grid-template-columns: 1fr;
         }
         
-        .floating-ball {
+        .football-icon {
             opacity: 0.3;
         }
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 600px) {
         body {
             padding: 15px;
+            background: linear-gradient(135deg, var(--dark) 0%, var(--dark-2) 100%);
         }
         
-        .football-panel, .login-panel {
-            padding: 30px 20px;
+        .login-container {
+            border-radius: var(--radius-md);
         }
         
-        .logo {
+        .brand-panel, .form-panel {
+            padding: 40px 25px;
+        }
+        
+        .brand-logo {
             flex-direction: column;
             text-align: center;
-            gap: 15px;
+            gap: 20px;
+        }
+        
+        .logo-text h1 {
+            font-size: 28px;
+        }
+        
+        .form-header h2 {
+            font-size: 28px;
+        }
+        
+        .form-input {
+            padding: 16px 20px 16px 50px;
+            font-size: 14px;
+        }
+        
+        .login-btn {
+            padding: 18px;
+            font-size: 15px;
+        }
+        
+        .credentials-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .shape {
+            display: none;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .brand-panel, .form-panel {
+            padding: 30px 20px;
         }
         
         .logo-text h1 {
             font-size: 24px;
         }
         
-        .login-header h2 {
+        .form-header h2 {
             font-size: 24px;
-        }
-        
-        .input-field {
-            padding: 14px 20px 14px 45px;
-            font-size: 14px;
-        }
-        
-        .login-btn {
-            padding: 16px;
-            font-size: 15px;
-        }
-        
-        .credentials-grid {
-            grid-template-columns: 1fr;
         }
     }
     </style>
@@ -667,93 +906,100 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 <body>
     <!-- BACKGROUND ELEMENTS -->
-    <div class="pitch-pattern"></div>
-    <div class="stadium-effect"></div>
-    <div class="floating-ball ball-1"></div>
-    <div class="floating-ball ball-2"></div>
-    <div class="floating-ball ball-3"></div>
+    <div class="bg-pattern"></div>
+    <div class="grid-overlay"></div>
+    <div class="floating-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+    <div class="football-icon ball-1"></div>
+    <div class="football-icon ball-2"></div>
 
-    <div class="login-container">
-        <!-- LEFT PANEL: FOOTBALL THEME -->
-        <div class="football-panel">
-            <div class="logo-section">
-                <div class="logo">
-                    <div class="logo-icon">
+    <div class="login-container animate__animated animate__fadeIn">
+        <!-- LEFT PANEL: BRAND & FEATURES -->
+        <div class="brand-panel">
+            <div class="brand-header">
+                <div class="brand-logo">
+                    <div class="logo-circle">
                         <i class="fas fa-futbol"></i>
                     </div>
                     <div class="logo-text">
                         <h1>COACH MANAGER PRO</h1>
-                        <div class="tagline">Système de Gestion d'Équipe</div>
+                        <div class="tagline">Système de Gestion d'Équipe Élite</div>
                     </div>
                 </div>
                 
-                <p class="welcome-message">
+                <p class="brand-description">
                     Application professionnelle pour la gestion complète de votre équipe de football. 
-                    Optimisez vos performances avec des outils dédiés aux entraîneurs.
+                    Optimisez vos performances avec des outils dédiés aux entraîneurs modernes.
                 </p>
             </div>
             
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-users"></i>
+            <div class="features-section">
+                <h3>Fonctionnalités Principales</h3>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="feature-title">Gestion d'Effectif</div>
+                        <div class="feature-desc">Suivez vos joueurs, leurs statistiques et leur état de forme en temps réel.</div>
                     </div>
-                    <div class="feature-title">Effectif</div>
-                    <div class="feature-desc">Gérez vos joueurs et leur statut</div>
-                </div>
-                
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-futbol"></i>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-futbol"></i>
+                        </div>
+                        <div class="feature-title">Calendrier des Matchs</div>
+                        <div class="feature-desc">Planifiez, analysez et évaluez chaque rencontre avec précision.</div>
                     </div>
-                    <div class="feature-title">Matchs</div>
-                    <div class="feature-desc">Planifiez et analysez vos rencontres</div>
-                </div>
-                
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-chart-line"></i>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="feature-title">Analyses Avancées</div>
+                        <div class="feature-desc">Statistiques détaillées et indicateurs de performance personnalisés.</div>
                     </div>
-                    <div class="feature-title">Statistiques</div>
-                    <div class="feature-desc">Suivez les performances en détail</div>
-                </div>
-                
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-clipboard-list"></i>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                        <div class="feature-title">Tactique & Composition</div>
+                        <div class="feature-desc">Créez et ajustez vos schémas tactiques et compositions d'équipe.</div>
                     </div>
-                    <div class="feature-title">Tactiques</div>
-                    <div class="feature-desc">Créez vos compositions d'équipe</div>
                 </div>
             </div>
             
-            <div style="margin-top: 40px; text-align: center;">
-                <div style="color: var(--secondary); font-size: 13px; margin-bottom: 8px;">
-                    <i class="fas fa-star"></i> Outil Professionnel pour Entraîneurs
+            <div style="margin-top: 50px; text-align: center;">
+                <div style="color: var(--primary-light); font-size: 14px; margin-bottom: 10px; font-weight: 500;">
+                    <i class="fas fa-shield-alt"></i> Système Sécurisé & Professionnel
                 </div>
-                <div style="color: rgba(255,255,255,0.7); font-size: 12px;">
-                    Développé pour optimiser la gestion de votre équipe
+                <div style="color: rgba(255,255,255,0.6); font-size: 13px; font-weight: 300;">
+                    Conçu exclusivement pour les entraîneurs et staff techniques
                 </div>
             </div>
         </div>
 
         <!-- RIGHT PANEL: LOGIN FORM -->
-        <div class="login-panel">
-            <div class="login-header">
-                <h2>Accès Staff</h2>
-                <p>Réservé à l'encadrement technique de l'équipe</p>
+        <div class="form-panel">
+            <div class="form-header">
+                <h2>Accès Staff Technique</h2>
+                <p>Accédez au panneau d'administration de votre équipe</p>
             </div>
 
             <div class="message-container">
                 <?php if (isset($_GET["expired"])): ?>
-                    <div class="message warning-message">
+                    <div class="message warning-message animate__animated animate__shakeX">
                         <i class="fas fa-clock"></i>
                         <span>Session expirée. Veuillez vous reconnecter.</span>
                     </div>
                 <?php endif; ?>
 
                 <?php if ($error): ?>
-                    <div class="message error-message">
+                    <div class="message error-message animate__animated animate__shakeX">
                         <i class="fas fa-exclamation-triangle"></i>
                         <span><?= htmlspecialchars($error) ?></span>
                     </div>
@@ -762,44 +1008,55 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             <form class="login-form" method="POST" id="loginForm">
                 <div class="form-group">
-                    <label for="login">Identifiant</label>
-                    <div class="input-container">
+                    <label for="login" class="form-label">Identifiant Staff</label>
+                    <div class="input-wrapper">
                         <i class="fas fa-user input-icon"></i>
                         <input type="text" 
                                id="login" 
                                name="login" 
-                               class="input-field" 
-                               placeholder="admin" 
+                               class="form-input" 
+                               placeholder="Entrez votre identifiant" 
                                required
-                               autocomplete="username">
+                               autocomplete="username"
+                               autofocus>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="password">Mot de passe</label>
-                    <div class="input-container">
+                    <label for="password" class="form-label">Mot de passe</label>
+                    <div class="input-wrapper">
                         <i class="fas fa-lock input-icon"></i>
                         <input type="password" 
                                id="password" 
                                name="password" 
-                               class="input-field" 
-                               placeholder="••••••••" 
+                               class="form-input" 
+                               placeholder="Entrez votre mot de passe" 
                                required
                                autocomplete="current-password">
+                        <button type="button" class="password-toggle" id="togglePassword">
+                            <i class="fas fa-eye"></i>
+                        </button>
                     </div>
                 </div>
 
                 <button type="submit" class="login-btn" id="submitBtn">
                     <i class="fas fa-sign-in-alt"></i>
-                    <span>SE CONNECTER</span>
+                    <span>CONNEXION AU PANEL</span>
                 </button>
             </form>
 
-            <div class="login-footer">
-                <p><i class="fas fa-shield-alt"></i> Connexion sécurisée</p>
-                <p>© 2024 Coach Manager Pro - Tous droits réservés</p>
+            <div class="form-footer">
+                <div class="security-info">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Connexion chiffrée & sécurisée</span>
+                </div>
+                
+                <div class="copyright">
+                    © 2024 Coach Manager Pro - Version 2.0
+                </div>
+                
                 <div class="credentials-hint">
-                    <h4><i class="fas fa-key"></i> Identifiants de test</h4>
+                    <h4><i class="fas fa-key"></i> Identifiants de Démonstration</h4>
                     <div class="credentials-grid">
                         <div class="cred-item">
                             <div class="cred-label">Utilisateur</div>
@@ -819,69 +1076,125 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     document.addEventListener('DOMContentLoaded', function() {
         const loginForm = document.getElementById('loginForm');
         const submitBtn = document.getElementById('submitBtn');
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('password');
         
         // Animation d'entrée des champs
         const formGroups = document.querySelectorAll('.form-group');
         formGroups.forEach((group, index) => {
             group.style.opacity = '0';
-            group.style.transform = 'translateY(20px)';
+            group.style.transform = 'translateY(30px)';
             
             setTimeout(() => {
-                group.style.transition = 'all 0.5s ease';
+                group.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
                 group.style.opacity = '1';
                 group.style.transform = 'translateY(0)';
             }, index * 200);
         });
         
-        // Effets de survol
-        const inputContainers = document.querySelectorAll('.input-container');
-        inputContainers.forEach(container => {
-            const input = container.querySelector('input');
+        // Toggle password visibility
+        togglePassword.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+            
+            // Animation
+            this.style.transform = 'translateY(-50%) scale(1.2)';
+            setTimeout(() => {
+                this.style.transform = 'translateY(-50%) scale(1)';
+            }, 200);
+        });
+        
+        // Input focus effects
+        const inputs = document.querySelectorAll('.form-input');
+        inputs.forEach(input => {
+            const wrapper = input.closest('.input-wrapper');
             
             input.addEventListener('focus', function() {
-                container.style.borderColor = 'var(--primary)';
-                container.style.boxShadow = '0 0 0 3px rgba(30, 122, 60, 0.15)';
-                container.style.transform = 'translateY(-2px)';
+                wrapper.style.borderColor = 'var(--primary)';
+                wrapper.style.boxShadow = '0 0 0 3px rgba(30, 122, 60, 0.2)';
+                wrapper.style.transform = 'translateY(-2px)';
             });
             
             input.addEventListener('blur', function() {
-                container.style.borderColor = '#e0e0e0';
-                container.style.boxShadow = 'none';
-                container.style.transform = 'translateY(0)';
+                if (!this.value) {
+                    wrapper.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                    wrapper.style.boxShadow = 'none';
+                    wrapper.style.transform = 'translateY(0)';
+                }
+            });
+            
+            // Animation on input
+            input.addEventListener('input', function() {
+                if (this.value) {
+                    wrapper.style.borderColor = 'rgba(46, 204, 113, 0.3)';
+                }
             });
         });
         
-        // Animation du bouton
+        // Button animation
         submitBtn.addEventListener('mouseenter', function() {
             this.style.transform = 'translateY(-3px)';
         });
         
         submitBtn.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0)';
+            if (!this.disabled) {
+                this.style.transform = 'translateY(0)';
+            }
         });
         
-        // Validation simple sans bug
+        // Form submission
         loginForm.addEventListener('submit', function(e) {
             const login = document.getElementById('login').value.trim();
-            const password = document.getElementById('password').value;
+            const password = passwordInput.value;
             
             if (!login || !password) {
                 e.preventDefault();
-                showMessage('Veuillez remplir tous les champs', 'error');
+                showMessage('Veuillez remplir tous les champs requis', 'error');
                 return false;
             }
             
-            // Petit effet visuel avant soumission
-            submitBtn.style.background = 'linear-gradient(135deg, var(--primary), var(--primary-dark))';
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>CONNEXION...</span>';
+            // Visual feedback
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>CONNEXION EN COURS...</span>';
+            submitBtn.style.background = 'linear-gradient(135deg, var(--primary-dark), #145c2f)';
+            submitBtn.style.transform = 'translateY(0)';
             
-            // La soumission se fait normalement via PHP
+            // Add subtle shake animation for errors
+            if (login !== 'admin' || password !== 'admin') {
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i><span>CONNEXION AU PANEL</span>';
+                    submitBtn.style.background = 'linear-gradient(135deg, var(--jersey-home), var(--primary-dark))';
+                    
+                    loginForm.classList.add('shake');
+                    setTimeout(() => {
+                        loginForm.classList.remove('shake');
+                    }, 500);
+                }, 1500);
+            }
+            
             return true;
         });
         
+        // Add shake animation style
+        const style = document.createElement('style');
+        style.textContent = `
+            .shake {
+                animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+            }
+            @keyframes shake {
+                10%, 90% { transform: translateX(-2px); }
+                20%, 80% { transform: translateX(4px); }
+                30%, 50%, 70% { transform: translateX(-4px); }
+                40%, 60% { transform: translateX(4px); }
+            }
+        `;
+        document.head.appendChild(style);
+        
         function showMessage(text, type) {
             const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${type}-message`;
+            messageDiv.className = `message ${type}-message animate__animated animate__shakeX`;
             messageDiv.innerHTML = `
                 <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
                 <span>${text}</span>
@@ -890,12 +1203,64 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             const container = document.querySelector('.message-container');
             container.innerHTML = '';
             container.appendChild(messageDiv);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.style.opacity = '0';
+                    messageDiv.style.transform = 'translateY(-10px)';
+                    setTimeout(() => {
+                        if (messageDiv.parentNode) {
+                            messageDiv.remove();
+                        }
+                    }, 300);
+                }
+            }, 5000);
         }
         
-        // Effet d'animation au chargement
+        // Add animation on load
         setTimeout(() => {
-            document.querySelector('.login-container').style.animation = 'slideIn 0.8s ease-out';
+            document.querySelector('.login-container').classList.add('animate__fadeIn');
         }, 100);
+        
+        // Add floating effect to cards on hover
+        const cards = document.querySelectorAll('.feature-card');
+        cards.forEach(card => {
+            card.addEventListener('mousemove', function(e) {
+                const rect = this.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                const rotateY = (x - centerX) / 25;
+                const rotateX = (centerY - y) / 25;
+                
+                this.style.transform = `
+                    perspective(1000px)
+                    rotateX(${rotateX}deg)
+                    rotateY(${rotateY}deg)
+                    translateY(-5px)
+                `;
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateY(0)';
+            });
+        });
+        
+        // Pre-fill for demo (optional, remove in production)
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            setTimeout(() => {
+                document.getElementById('login').value = 'admin';
+                passwordInput.value = 'admin';
+                
+                // Trigger input events for styling
+                document.getElementById('login').dispatchEvent(new Event('input'));
+                passwordInput.dispatchEvent(new Event('input'));
+            }, 1000);
+        }
     });
     </script>
 </body>

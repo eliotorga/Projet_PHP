@@ -32,6 +32,116 @@ function getPosteColor($poste) {
 }
 
 /* =======================
+   CALCUL SCORE D'IMPACT (Nouveau)
+   Pour estimer les chances de gagner avec un joueur
+======================= */
+function calculerScoreImpact($joueur_id, $gestion_sportive) {
+    $score = 0;
+    $facteurs = [];
+    
+    // 1. Moyenne des évaluations (30%)
+    $stmt = $gestion_sportive->prepare("
+        SELECT AVG(evaluation) as moyenne, COUNT(*) as nb_matchs
+        FROM participation
+        WHERE id_joueur = ? AND evaluation IS NOT NULL
+    ");
+    $stmt->execute([$joueur_id]);
+    $eval = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($eval['moyenne'] && $eval['nb_matchs'] > 0) {
+        $note_score = ($eval['moyenne'] / 6) * 30; // Normalisé sur 30 points
+        $score += $note_score;
+        $facteurs['evaluation'] = round($note_score, 1);
+    }
+    
+    // 2. Pourcentage de victoires (30%)
+    $stmt = $gestion_sportive->prepare("
+        SELECT 
+            COUNT(DISTINCT m.id_match) as total,
+            SUM(CASE WHEN m.resultat = 'VICTOIRE' THEN 1 ELSE 0 END) as victoires
+        FROM participation p
+        JOIN matchs m ON m.id_match = p.id_match
+        WHERE p.id_joueur = ? AND m.etat = 'JOUE'
+    ");
+    $stmt->execute([$joueur_id]);
+    $victoires = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($victoires['total'] > 0) {
+        $pct_victoire = ($victoires['victoires'] / $victoires['total']) * 100;
+        $victoire_score = ($pct_victoire / 100) * 30; // Normalisé sur 30 points
+        $score += $victoire_score;
+        $facteurs['victoires'] = round($victoire_score, 1);
+    }
+    
+    // 3. Régularité (consécutifs) (20%)
+    $stmt = $gestion_sportive->prepare("
+        SELECT COUNT(*) as consecutifs
+        FROM (
+            SELECT m.id_match
+            FROM matchs m
+            WHERE m.etat = 'JOUE'
+            ORDER BY m.date_heure DESC
+        ) as matchs_recents
+        WHERE EXISTS (
+            SELECT 1 FROM participation p 
+            WHERE p.id_match = matchs_recents.id_match 
+            AND p.id_joueur = ?
+        )
+    ");
+    $stmt->execute([$joueur_id]);
+    $consecutifs = $stmt->fetchColumn();
+    
+    if ($consecutifs > 0) {
+        $consecutif_score = min($consecutifs * 2, 20); // 1 point par match, max 20
+        $score += $consecutif_score;
+        $facteurs['consecutifs'] = round($consecutif_score, 1);
+    }
+    
+    // 4. Performance par poste (10%)
+    $stmt = $gestion_sportive->prepare("
+        SELECT 
+            po.libelle as poste,
+            AVG(p.evaluation) as moyenne_poste,
+            COUNT(*) as nb_matchs_poste
+        FROM participation p
+        JOIN poste po ON po.id_poste = p.id_poste
+        WHERE p.id_joueur = ? AND p.evaluation IS NOT NULL
+        GROUP BY p.id_poste, po.libelle
+        ORDER BY AVG(p.evaluation) DESC
+        LIMIT 1
+    ");
+    $stmt->execute([$joueur_id]);
+    $poste_data = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($poste_data && $poste_data['moyenne_poste'] > 0) {
+        $poste_score = ($poste_data['moyenne_poste'] / 6) * 10;
+        $score += $poste_score;
+        $facteurs['poste'] = round($poste_score, 1);
+    }
+    
+    // 5. Expérience (nombre de matchs) (10%)
+    $stmt = $gestion_sportive->prepare("
+        SELECT COUNT(*) as total_matchs
+        FROM participation
+        WHERE id_joueur = ?
+    ");
+    $stmt->execute([$joueur_id]);
+    $total_matchs = $stmt->fetchColumn();
+    
+    if ($total_matchs > 0) {
+        $experience_score = min($total_matchs, 10); // 1 point par match, max 10
+        $score += $experience_score;
+        $facteurs['experience'] = round($experience_score, 1);
+    }
+    
+    return [
+        'score_total' => round(min($score, 100), 1), // Max 100
+        'facteurs' => $facteurs,
+        'pourcentage' => round(min($score, 100))
+    ];
+}
+
+/* =======================
    STATISTIQUES GÉNÉRALES
 ======================= */
 // Matchs
@@ -65,7 +175,7 @@ $joueurs_statut = $gestion_sportive->query("
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 /* =======================
-   TOP PERFORMERS
+   TOP PERFORMERS AVEC SCORE D'IMPACT
 ======================= */
 $top_performers = $gestion_sportive->query("
     SELECT 
@@ -84,6 +194,14 @@ $top_performers = $gestion_sportive->query("
     LIMIT 5
 ")->fetchAll(PDO::FETCH_ASSOC);
 
+// Ajouter le score d'impact aux top performers
+foreach ($top_performers as &$joueur) {
+    $score_impact = calculerScoreImpact($joueur['id_joueur'], $gestion_sportive);
+    $joueur['score_impact'] = $score_impact['score_total'];
+    $joueur['pourcentage_impact'] = $score_impact['pourcentage'];
+}
+unset($joueur);
+
 /* =======================
    DISTRIBUTION DES POSTES
 ======================= */
@@ -98,24 +216,7 @@ $distribution_postes = $gestion_sportive->query("
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 /* =======================
-   ÉVOLUTION DES PERFORMANCES
-======================= */
-$evolution = $gestion_sportive->query("
-    SELECT 
-        DATE_FORMAT(m.date_heure, '%Y-%m') as mois,
-        COUNT(DISTINCT m.id_match) as nb_matchs,
-        ROUND(AVG(p.evaluation), 2) as moyenne_eval,
-        SUM(CASE WHEN m.resultat = 'VICTOIRE' THEN 1 ELSE 0 END) as victoires
-    FROM matchs m
-    LEFT JOIN participation p ON p.id_match = m.id_match
-    WHERE m.etat = 'JOUE'
-    GROUP BY DATE_FORMAT(m.date_heure, '%Y-%m')
-    ORDER BY mois DESC
-    LIMIT 6
-")->fetchAll(PDO::FETCH_ASSOC);
-
-/* =======================
-   STATISTIQUES DÉTAILLÉES DES JOUEURS
+   STATISTIQUES DÉTAILLÉES DES JOUEURS AVEC SCORE D'IMPACT
 ======================= */
 $joueurs_stats = $gestion_sportive->query("
     SELECT 
@@ -186,6 +287,12 @@ foreach ($joueurs_stats as &$joueur) {
         else break;
     }
     $joueur['selections_consecutives'] = $consecutifs;
+    
+    // CALCUL DU SCORE D'IMPACT (Nouveau)
+    $score_impact = calculerScoreImpact($id, $gestion_sportive);
+    $joueur['score_impact'] = $score_impact['score_total'];
+    $joueur['pourcentage_impact'] = $score_impact['pourcentage'];
+    $joueur['facteurs_impact'] = $score_impact['facteurs'];
 }
 unset($joueur); // Détruire la référence
 
@@ -195,7 +302,7 @@ unset($joueur); // Détruire la référence
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Statistiques de l'Équipe</title>
+    <title>Statistiques de l'Équipe - Score d'Impact</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -258,6 +365,133 @@ unset($joueur); // Détruire la référence
         font-size: 1.2rem;
         color: var(--gray);
         max-width: 800px;
+    }
+
+    /* =============================
+       CARTE SCORE D'IMPACT (Nouveau)
+    ============================= */
+    .impact-card {
+        background: white;
+        border-radius: var(--radius);
+        padding: 25px;
+        box-shadow: var(--shadow);
+        margin-bottom: 25px;
+        border-left: 5px solid var(--primary);
+    }
+
+    .impact-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .impact-icon {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, #9b59b6, #8e44ad);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+    }
+
+    .impact-info h3 {
+        font-size: 1.4rem;
+        color: var(--dark);
+        margin-bottom: 5px;
+    }
+
+    .impact-info p {
+        color: var(--gray);
+        font-size: 0.95rem;
+    }
+
+    .score-container {
+        display: flex;
+        align-items: center;
+        gap: 30px;
+        flex-wrap: wrap;
+    }
+
+    .score-circle {
+        position: relative;
+        width: 120px;
+        height: 120px;
+    }
+
+    .circle-bg {
+        fill: none;
+        stroke: #eee;
+        stroke-width: 8;
+    }
+
+    .circle-progress {
+        fill: none;
+        stroke-width: 8;
+        stroke-linecap: round;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+        transition: stroke-dashoffset 1s ease;
+    }
+
+    .circle-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+    }
+
+    .circle-value {
+        font-size: 2rem;
+        font-weight: 700;
+    }
+
+    .circle-label {
+        font-size: 0.9rem;
+        color: var(--gray);
+    }
+
+    .facteurs-container {
+        flex: 1;
+        min-width: 300px;
+    }
+
+    .facteur-item {
+        margin-bottom: 15px;
+    }
+
+    .facteur-label {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+        font-size: 0.9rem;
+    }
+
+    .facteur-nom {
+        color: var(--dark);
+    }
+
+    .facteur-valeur {
+        font-weight: 600;
+        color: var(--primary);
+    }
+
+    .facteur-bar {
+        height: 8px;
+        background: #eee;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .facteur-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--secondary), var(--primary));
+        border-radius: 4px;
+        transition: width 0.8s ease;
     }
 
     /* =============================
@@ -324,65 +558,6 @@ unset($joueur); // Détruire la référence
     }
 
     /* =============================
-       GRAPHES
-    ============================= */
-    .chart-container {
-        height: 250px;
-        margin-top: 15px;
-        position: relative;
-    }
-
-    /* =============================
-       CARTES DE RÉSULTATS
-    ============================= */
-    .results-card {
-        background: white;
-        border-radius: var(--radius);
-        padding: 25px;
-        box-shadow: var(--shadow);
-    }
-
-    .results-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 20px;
-        margin-top: 20px;
-    }
-
-    .result-item {
-        text-align: center;
-        padding: 20px;
-        border-radius: 12px;
-        transition: var(--transition);
-    }
-
-    .result-item:hover {
-        transform: scale(1.05);
-    }
-
-    .victoires { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); }
-    .defaites { background: linear-gradient(135deg, #ffebee, #ffcdd2); }
-    .nuls { background: linear-gradient(135deg, #fff8e1, #ffe082); }
-
-    .result-number {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 5px;
-    }
-
-    .result-label {
-        font-size: 1rem;
-        color: var(--dark);
-        font-weight: 600;
-    }
-
-    .result-percentage {
-        font-size: 1.1rem;
-        font-weight: 700;
-        margin-top: 5px;
-    }
-
-    /* =============================
        TOP PERFORMERS
     ============================= */
     .top-players {
@@ -446,6 +621,18 @@ unset($joueur); // Détruire la référence
     .player-rating {
         color: var(--accent);
         font-weight: 700;
+    }
+
+    .player-impact {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: #e8f5e9;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--primary);
     }
 
     /* =============================
@@ -608,6 +795,25 @@ unset($joueur); // Détruire la référence
     }
 
     /* =============================
+       INDICATEUR SCORE D'IMPACT
+    ============================= */
+    .impact-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: var(--primary-dark);
+    }
+
+    .impact-high { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); color: #2e7d32; }
+    .impact-medium { background: linear-gradient(135deg, #fff8e1, #ffe082); color: #f57c00; }
+    .impact-low { background: linear-gradient(135deg, #ffebee, #ffcdd2); color: #c62828; }
+
+    /* =============================
        RATING STARS
     ============================= */
     .rating-stars {
@@ -639,8 +845,14 @@ unset($joueur); // Détruire la référence
         }
     }
 
-    .stat-card, .results-card, .top-players {
+    .stat-card, .results-card, .top-players, .impact-card {
         animation: fadeInUp 0.5s ease forwards;
+    }
+
+    @keyframes progressAnimation {
+        from {
+            stroke-dashoffset: 314;
+        }
     }
 
     /* =============================
@@ -663,6 +875,11 @@ unset($joueur); // Détruire la référence
             display: block;
             overflow-x: auto;
         }
+        
+        .score-container {
+            flex-direction: column;
+            align-items: flex-start;
+        }
     }
     </style>
 </head>
@@ -674,62 +891,93 @@ unset($joueur); // Détruire la référence
             <p>Analyses détaillées des performances de l'équipe et des joueurs</p>
         </div>
 
-        <!-- STATISTIQUES GÉNÉRALES -->
-        <div class="stats-grid">
-            <!-- RÉSULTATS GÉNÉRAUX -->
-            <div class="results-card">
-                <div class="stat-header">
-                    <div class="stat-icon">
-                        <i class="fas fa-trophy"></i>
-                    </div>
-                    <h2 class="stat-title">Performances Globales</h2>
+        <!-- NOUVEAU: CARTE SCORE D'IMPACT -->
+        <div class="impact-card">
+            <div class="impact-header">
+                <div class="impact-icon">
+                    <i class="fas fa-bolt"></i>
                 </div>
-                
-                <div class="results-grid">
-                    <div class="result-item victoires">
-                        <div class="result-number"><?= $stats_matchs['victoires'] ?? 0 ?></div>
-                        <div class="result-label">Victoires</div>
-                        <div class="result-percentage">
-                            <?= $stats_matchs['joues'] > 0 ? pct($stats_matchs['victoires'], $stats_matchs['joues']) : 0 ?>%
-                        </div>
-                    </div>
-                    
-                    <div class="result-item defaites">
-                        <div class="result-number"><?= $stats_matchs['defaites'] ?? 0 ?></div>
-                        <div class="result-label">Défaites</div>
-                        <div class="result-percentage">
-                            <?= $stats_matchs['joues'] > 0 ? pct($stats_matchs['defaites'], $stats_matchs['joues']) : 0 ?>%
-                        </div>
-                    </div>
-                    
-                    <div class="result-item nuls">
-                        <div class="result-number"><?= $stats_matchs['nuls'] ?? 0 ?></div>
-                        <div class="result-label">Matchs Nuls</div>
-                        <div class="result-percentage">
-                            <?= $stats_matchs['joues'] > 0 ? pct($stats_matchs['nuls'], $stats_matchs['joues']) : 0 ?>%
-                        </div>
+                <div class="impact-info">
+                    <h3>Système de Score d'Impact</h3>
+                    <p>Algorithme prédictif pour estimer les chances de gagner avec chaque joueur</p>
+                </div>
+            </div>
+            <div class="score-container">
+                <div class="score-circle">
+                    <svg width="120" height="120" viewBox="0 0 120 120">
+                        <circle class="circle-bg" cx="60" cy="60" r="50"></circle>
+                        <circle class="circle-progress" cx="60" cy="60" r="50" 
+                                style="stroke-dasharray: 314; stroke-dashoffset: <?= 314 - (314 * ($performance_moyenne * 100 / 600)) / 100 ?>; stroke: <?= 
+                                    $performance_moyenne >= 4.5 ? '#2ecc71' : 
+                                    ($performance_moyenne >= 3 ? '#f39c12' : '#e74c3c') ?>;">
+                        </circle>
+                    </svg>
+                    <div class="circle-text">
+                        <div class="circle-value"><?= number_format($performance_moyenne, 1) ?></div>
+                        <div class="circle-label">Score global</div>
                     </div>
                 </div>
-                
-                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #f0f3f8;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span>Total matchs joués</span>
-                        <span style="font-weight: 700; font-size: 1.2rem;"><?= $stats_matchs['joues'] ?? 0 ?></span>
+                <div class="facteurs-container">
+                    <div class="facteur-item">
+                        <div class="facteur-label">
+                            <span class="facteur-nom">Moyenne des évaluations</span>
+                            <span class="facteur-valeur">30%</span>
+                        </div>
+                        <div class="facteur-bar">
+                            <div class="facteur-fill" style="width: 100%"></div>
+                        </div>
                     </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-                        <span>Matchs à venir</span>
-                        <span style="font-weight: 700; font-size: 1.2rem;"><?= $stats_matchs['a_venir'] ?? 0 ?></span>
+                    <div class="facteur-item">
+                        <div class="facteur-label">
+                            <span class="facteur-nom">Pourcentage de victoires</span>
+                            <span class="facteur-valeur">30%</span>
+                        </div>
+                        <div class="facteur-bar">
+                            <div class="facteur-fill" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    <div class="facteur-item">
+                        <div class="facteur-label">
+                            <span class="facteur-nom">Régularité (sélections consécutives)</span>
+                            <span class="facteur-valeur">20%</span>
+                        </div>
+                        <div class="facteur-bar">
+                            <div class="facteur-fill" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    <div class="facteur-item">
+                        <div class="facteur-label">
+                            <span class="facteur-nom">Performance au poste</span>
+                            <span class="facteur-valeur">10%</span>
+                        </div>
+                        <div class="facteur-bar">
+                            <div class="facteur-fill" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    <div class="facteur-item">
+                        <div class="facteur-label">
+                            <span class="facteur-nom">Expérience (matchs joués)</span>
+                            <span class="facteur-valeur">10%</span>
+                        </div>
+                        <div class="facteur-bar">
+                            <div class="facteur-fill" style="width: 100%"></div>
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- TOP PERFORMERS -->
+        <!-- STATISTIQUES GÉNÉRALES -->
+        <div class="stats-grid">
+            <!-- RÉSULTATS GÉNÉRAUX -->
+
+            <!-- TOP PERFORMERS AVEC SCORE D'IMPACT -->
             <div class="top-players">
                 <div class="stat-header">
                     <div class="stat-icon">
                         <i class="fas fa-crown"></i>
                     </div>
-                    <h2 class="stat-title">Top Performers</h2>
+                    <h2 class="stat-title">Top Performers & Score d'Impact</h2>
                 </div>
                 
                 <div class="player-ranking">
@@ -746,6 +994,9 @@ unset($joueur); // Détruire la référence
                                         <span>
                                             <i class="fas fa-gamepad"></i> <?= $joueur['nb_matchs'] ?> matchs
                                         </span>
+                                        <span class="player-impact">
+                                            <i class="fas fa-bolt"></i> <?= $joueur['pourcentage_impact'] ?>%
+                                        </span>
                                     </div>
                                 </div>
                                 <span class="badge <?= statutClass($joueur['statut']) ?>">
@@ -761,37 +1012,12 @@ unset($joueur); // Détruire la référence
                     <?php endif; ?>
                 </div>
             </div>
-
-            <!-- PERFORMANCE MOYENNE -->
-            <div class="stat-card">
-                <div class="stat-header">
-                    <div class="stat-icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <h2 class="stat-title">Performance Générale</h2>
-                </div>
-                
-                <div style="text-align: center; padding: 20px 0;">
-                    <div style="font-size: 4rem; font-weight: 700; color: var(--accent); margin-bottom: 10px;">
-                        <?= number_format($performance_moyenne, 1) ?>
-                    </div>
-                    <div style="color: var(--gray); font-size: 1.1rem;">Moyenne des évaluations</div>
-                    
-                    <div class="rating-stars" style="justify-content: center; margin: 20px 0;">
-                        <?php 
-                        $note_arrondie = round($performance_moyenne);
-                        for ($i = 1; $i <= 5; $i++): ?>
-                            <i class="fas fa-star star <?= $i <= $note_arrondie ? 'filled' : '' ?>"></i>
-                        <?php endfor; ?>
-                    </div>
-                </div>
-            </div>
         </div>
 
-        <!-- TABLEAU DES STATISTIQUES DÉTAILLÉES -->
+        <!-- TABLEAU DES STATISTIQUES DÉTAILLÉES AVEC SCORE D'IMPACT -->
         <div class="table-container">
             <div class="table-header">
-                <h2><i class="fas fa-table"></i> Statistiques Détaillées par Joueur</h2>
+                <h2><i class="fas fa-table"></i> Statistiques Détaillées par Joueur avec Score d'Impact</h2>
             </div>
             
             <div class="filters-container">
@@ -814,10 +1040,10 @@ unset($joueur); // Détruire la référence
                     <label class="filter-label">Trier par</label>
                     <select class="filter-select" id="triStatistique">
                         <option value="nom">Nom A-Z</option>
+                        <option value="impact_desc">Score d'impact ▼</option>
+                        <option value="impact_asc">Score d'impact ▲</option>
                         <option value="moyenne_desc">Note décroissante</option>
-                        <option value="matchs_desc">Matchs joués</option>
                         <option value="victoires_desc">% victoires</option>
-                        <option value="consecutifs_desc">Sélections consécutives</option>
                     </select>
                 </div>
             </div>
@@ -828,24 +1054,26 @@ unset($joueur); // Détruire la référence
                         <th data-sort="nom">Joueur <i class="fas fa-sort"></i></th>
                         <th data-sort="statut">Statut <i class="fas fa-sort"></i></th>
                         <th data-sort="poste">Poste préféré <i class="fas fa-sort"></i></th>
-                        <th data-sort="titularisations">Titularisations <i class="fas fa-sort"></i></th>
-                        <th data-sort="remplacements">Remplacements <i class="fas fa-sort"></i></th>
                         <th data-sort="moyenne">Moy. notes <i class="fas fa-sort"></i></th>
                         <th data-sort="victoires">% victoires <i class="fas fa-sort"></i></th>
-                        <th data-sort="consecutifs">Sél. consécutives <i class="fas fa-sort"></i></th>
+                        <th data-sort="impact">Score d'impact <i class="fas fa-sort"></i></th>
+                        <th>Facteurs</th>
+                        <th data-sort="consecutifs">Forme <i class="fas fa-sort"></i></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($joueurs_stats as $j): ?>
+                    <?php foreach ($joueurs_stats as $j): 
+                        $impactClass = $j['pourcentage_impact'] >= 70 ? 'impact-high' : 
+                                     ($j['pourcentage_impact'] >= 40 ? 'impact-medium' : 'impact-low');
+                    ?>
                     <tr data-statut="<?= $j['statut_code'] ?>"
                         data-nom="<?= htmlspecialchars(strtolower($j['prenom'] . ' ' . $j['nom'])) ?>"
                         data-poste="<?= htmlspecialchars(strtolower($j['poste_prefere'])) ?>"
                         data-moyenne="<?= $j['moyenne_notes'] ?? 0 ?>"
                         data-matchs="<?= $j['nb_matchs'] ?? 0 ?>"
                         data-victoires="<?= $j['pct_victoires'] ?>"
-                        data-consecutifs="<?= $j['selections_consecutives'] ?>"
-                        data-titularisations="<?= $j['titularisations'] ?>"
-                        data-remplacements="<?= $j['remplacements'] ?>">
+                        data-impact="<?= $j['score_impact'] ?>"
+                        data-consecutifs="<?= $j['selections_consecutives'] ?>">
                         
                         <td>
                             <div class="player-cell">
@@ -877,14 +1105,6 @@ unset($joueur); // Détruire la référence
                             <?php endif; ?>
                         </td>
                         
-                        <td style="font-weight: 600; color: var(--primary);">
-                            <?= $j['titularisations'] ?>
-                        </td>
-                        
-                        <td style="font-weight: 600; color: var(--accent);">
-                            <?= $j['remplacements'] ?>
-                        </td>
-                        
                         <td>
                             <?php if ($j['moyenne_notes']): ?>
                                 <div class="rating-stars">
@@ -904,6 +1124,9 @@ unset($joueur); // Détruire la référence
                         
                         <td>
                             <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="font-weight: 600; min-width: 50px; text-align: right;">
+                                    <?= number_format($j['pct_victoires'], 1) ?>%
+                                </div>
                                 <div style="flex: 1;">
                                     <div style="height: 6px; background: #e0e6ed; border-radius: 3px; overflow: hidden;">
                                         <div style="height: 100%; width: <?= $j['pct_victoires'] ?>%; 
@@ -911,19 +1134,42 @@ unset($joueur); // Détruire la référence
                                         </div>
                                     </div>
                                 </div>
-                                <div style="font-weight: 600; min-width: 50px; text-align: right;">
-                                    <?= number_format($j['pct_victoires'], 1) ?>%
+                            </div>
+                        </td>
+                        
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="impact-indicator <?= $impactClass ?>">
+                                    <i class="fas fa-bolt"></i>
+                                    <?= $j['pourcentage_impact'] ?>%
+                                </div>
+                                <div style="font-size: 0.85rem; color: var(--gray);">
+                                    /100
                                 </div>
                             </div>
                         </td>
                         
                         <td>
+                            <div style="font-size: 0.75rem; color: var(--gray); line-height: 1.4;">
+                                <?php if (isset($j['facteurs_impact'])): ?>
+                                    <?php foreach ($j['facteurs_impact'] as $facteur => $valeur): ?>
+                                        <div><?= ucfirst($facteur) ?>: <?= $valeur ?> pts</div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <div style="opacity: 0.6;">Données insuffisantes</div>
+                                <?php endif; ?>
+                            </div>
+                        </td>
+                        
+                        <td>
                             <div style="display: flex; align-items: center; gap: 8px;">
-                                <div style="font-weight: 700; font-size: 1.2rem; color: var(--primary);">
+                                <div style="font-weight: 700; font-size: 1.2rem; color: <?= 
+                                    $j['selections_consecutives'] >= 3 ? 'var(--secondary)' : 
+                                    ($j['selections_consecutives'] >= 1 ? 'var(--accent)' : 'var(--gray)') ?>;">
                                     <?= $j['selections_consecutives'] ?>
                                 </div>
                                 <div style="font-size: 0.85rem; color: var(--gray);">
-                                    match(s)
+                                    match(s) consécutif(s)
                                 </div>
                             </div>
                         </td>
@@ -955,12 +1201,9 @@ unset($joueur); // Détruire la référence
             rows.forEach(row => {
                 const statut = row.dataset.statut;
                 const nom = row.dataset.nom;
-                const poste = row.dataset.poste;
                 
                 const okStatut = !filtreStatutVal || statut === filtreStatutVal;
-                const okRecherche = !rechercheVal || 
-                    nom.includes(rechercheVal) || 
-                    poste.includes(rechercheVal);
+                const okRecherche = !rechercheVal || nom.includes(rechercheVal);
                 
                 row.style.display = (okStatut && okRecherche) ? '' : 'none';
             });
@@ -991,25 +1234,17 @@ unset($joueur); // Détruire la référence
                         valA = parseFloat(a.dataset.moyenne) || 0;
                         valB = parseFloat(b.dataset.moyenne) || 0;
                         break;
-                    case 'matchs':
-                        valA = parseInt(a.dataset.matchs) || 0;
-                        valB = parseInt(b.dataset.matchs) || 0;
-                        break;
                     case 'victoires':
                         valA = parseFloat(a.dataset.victoires) || 0;
                         valB = parseFloat(b.dataset.victoires) || 0;
                         break;
+                    case 'impact':
+                        valA = parseFloat(a.dataset.impact) || 0;
+                        valB = parseFloat(b.dataset.impact) || 0;
+                        break;
                     case 'consecutifs':
                         valA = parseInt(a.dataset.consecutifs) || 0;
                         valB = parseInt(b.dataset.consecutifs) || 0;
-                        break;
-                    case 'titularisations':
-                        valA = parseInt(a.dataset.titularisations) || 0;
-                        valB = parseInt(b.dataset.titularisations) || 0;
-                        break;
-                    case 'remplacements':
-                        valA = parseInt(a.dataset.remplacements) || 0;
-                        valB = parseInt(b.dataset.remplacements) || 0;
                         break;
                     default:
                         valA = a.dataset.nom;
@@ -1025,95 +1260,55 @@ unset($joueur); // Détruire la référence
             
             // Réinsérer dans l'ordre
             visibleRows.forEach(row => tbody.appendChild(row));
-            sortAscending = !sortAscending;
         }
         
         // Événements
         filtreStatut.addEventListener('change', appliquerFiltres);
         recherche.addEventListener('input', appliquerFiltres);
         triStatistique.addEventListener('change', function() {
-            trierTableau(this.value.split('_')[0]);
+            const [colonne, direction] = this.value.split('_');
+            sortAscending = direction !== 'desc';
+            trierTableau(colonne);
         });
         
         // Tri au clic sur les en-têtes
         document.querySelectorAll('#tableStats th[data-sort]').forEach(th => {
             th.addEventListener('click', function() {
                 const colonne = this.dataset.sort;
+                if (currentSort === colonne) {
+                    sortAscending = !sortAscending;
+                } else {
+                    sortAscending = true;
+                    currentSort = colonne;
+                }
                 trierTableau(colonne);
             });
         });
         
-        // Animation des lignes au chargement
-        rows.forEach((row, index) => {
-            row.style.animationDelay = (index * 0.05) + 's';
-        });
-    });
-    
-    // =============================
-    // GRAPHE DES RÉSULTATS (Chart.js)
-    // =============================
-    document.addEventListener('DOMContentLoaded', function() {
-        const ctx = document.createElement('canvas');
-        ctx.style.width = '100%';
-        ctx.style.height = '300px';
-        
-        // Trouver ou créer un conteneur pour le graphique
-        const resultsCard = document.querySelector('.results-card');
-        if (resultsCard) {
-            const chartContainer = document.createElement('div');
-            chartContainer.className = 'chart-container';
-            chartContainer.appendChild(ctx);
-            resultsCard.appendChild(chartContainer);
+        // Animation des cercles de score
+        document.querySelectorAll('.circle-progress').forEach(circle => {
+            const radius = circle.r.baseVal.value;
+            const circumference = radius * 2 * Math.PI;
+            const offset = circumference - (circle.style.strokeDashoffset.replace('px', ''));
+            circle.style.strokeDasharray = `${circumference} ${circumference}`;
+            circle.style.strokeDashoffset = circumference;
             
-            const chart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Victoires', 'Défaites', 'Matchs Nuls'],
-                    datasets: [{
-                        data: [
-                            <?= $stats_matchs['victoires'] ?? 0 ?>,
-                            <?= $stats_matchs['defaites'] ?? 0 ?>,
-                            <?= $stats_matchs['nuls'] ?? 0 ?>
-                        ],
-                        backgroundColor: [
-                            '#2ecc71',
-                            '#e74c3c',
-                            '#f39c12'
-                        ],
-                        borderWidth: 2,
-                        borderColor: '#ffffff'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                usePointStyle: true,
-                                font: {
-                                    size: 12,
-                                    family: 'Montserrat'
-                                }
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.raw || 0;
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-                                    return `${label}: ${value} (${percentage}%)`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
+            setTimeout(() => {
+                circle.style.transition = 'stroke-dashoffset 1s ease-in-out';
+                circle.style.strokeDashoffset = offset;
+            }, 500);
+        });
+        
+        // Animation des barres de facteurs
+        document.querySelectorAll('.facteur-fill').forEach(bar => {
+            const width = bar.style.width;
+            bar.style.width = '0%';
+            
+            setTimeout(() => {
+                bar.style.transition = 'width 0.8s ease-in-out';
+                bar.style.width = width;
+            }, 300);
+        });
     });
     
     // =============================
@@ -1122,7 +1317,7 @@ unset($joueur); // Détruire la référence
     document.addEventListener('DOMContentLoaded', function() {
         // Animation au scroll
         function animateOnScroll() {
-            const elements = document.querySelectorAll('.stat-card, .results-card, .top-players');
+            const elements = document.querySelectorAll('.stat-card, .results-card, .top-players, .impact-card');
             
             elements.forEach(element => {
                 const elementTop = element.getBoundingClientRect().top;
@@ -1138,17 +1333,44 @@ unset($joueur); // Détruire la référence
         window.addEventListener('scroll', animateOnScroll);
         animateOnScroll(); // Appel initial
         
-        // Effets de survol sur les lignes du tableau
-        const tableRows = document.querySelectorAll('.stats-table tbody tr');
-        tableRows.forEach(row => {
-            row.addEventListener('mouseenter', function() {
-                this.style.boxShadow = '0 5px 15px rgba(0,0,0,0.1)';
-                this.style.backgroundColor = '#f8fafc';
+        // Tooltip pour le score d'impact
+        const impactIndicators = document.querySelectorAll('.impact-indicator');
+        impactIndicators.forEach(indicator => {
+            indicator.addEventListener('mouseenter', function(e) {
+                const score = this.textContent.match(/\d+/)[0];
+                const tooltip = document.createElement('div');
+                tooltip.className = 'impact-tooltip';
+                tooltip.innerHTML = `
+                    <strong>Score d'Impact: ${score}/100</strong><br>
+                    ${score >= 70 ? 'Très haute probabilité de victoire' : 
+                      score >= 40 ? 'Probabilité moyenne de victoire' : 
+                      'Probabilité faible de victoire'}
+                `;
+                tooltip.style.cssText = `
+                    position: absolute;
+                    background: #2c3e50;
+                    color: white;
+                    padding: 10px;
+                    border-radius: 6px;
+                    font-size: 0.8rem;
+                    z-index: 1000;
+                    max-width: 200px;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+                `;
+                document.body.appendChild(tooltip);
+                
+                const rect = this.getBoundingClientRect();
+                tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+                tooltip.style.left = (rect.left + rect.width/2 - tooltip.offsetWidth/2) + 'px';
+                
+                this._tooltip = tooltip;
             });
             
-            row.addEventListener('mouseleave', function() {
-                this.style.boxShadow = 'none';
-                this.style.backgroundColor = '';
+            indicator.addEventListener('mouseleave', function() {
+                if (this._tooltip) {
+                    this._tooltip.remove();
+                    this._tooltip = null;
+                }
             });
         });
     });

@@ -736,20 +736,18 @@ include "../includes/header.php";
                         
                         <!-- ACTIONS -->
                         <div class="player-actions">
-                            <a href="fiche_joueur.php?id=<?= $joueur['id_joueur'] ?>" 
-                               class="btn-action btn-view">
-                                <i class="fas fa-eye"></i> Voir
+                            <a href="joueur_perso.php?id=<?= $joueur['id_joueur'] ?>" class="btn-action btn-view">
+                            <i class="fas fa-eye"></i> Voir
                             </a>
                             
-                            <a href="modifier_joueur.php?id_joueur=<?= $joueur["id_joueur"] ?>" 
-                               class="btn-action btn-edit">
-                                <i class="fas fa-edit"></i> Modifier
-                            </a>
+                            <a href="modifier_joueur.php?id=<?= $joueur['id_joueur'] ?>" 
+       class="btn-action btn-modify">
+        <i class="fas fa-edit"></i> Modifier
+    </a>
                             
-                            <a href="supprimer_joueur.php?id_joueur=<?= $joueur["id_joueur"] ?>"
-                               class="btn-action btn-delete"
-                               onclick="return confirm('⚠️ Êtes-vous sûr de vouloir supprimer ce joueur ?\n\nCette action supprimera également tous ses commentaires et participations aux matchs.');">
-                                <i class="fas fa-trash"></i> Supprimer
+                            <a href="supprimer_joueur.php"
+                            class="btn-action btn-delete">
+                            <i class="fas fa-trash"></i> Supprimer
                             </a>
                         </div>
                     </div>

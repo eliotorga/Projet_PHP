@@ -422,6 +422,21 @@ include "../includes/header.php";
     /* =============================
        ACTIONS
     ============================= */
+
+
+
+
+    /* AJOUTER DANS LA SECTION ACTIONS */
+.btn-feuille {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    color: white;
+}
+
+.btn-feuille:hover {
+    background: linear-gradient(135deg, #8e44ad, #7d3c98);
+    transform: translateY(-2px);
+}
+
     .match-actions {
         display: flex;
         gap: 10px;
@@ -700,6 +715,9 @@ include "../includes/header.php";
             <a href="ajouter_match.php" class="btn-add-match">
                 <i class="fas fa-plus-circle"></i> Nouveau Match
             </a>
+            <a href="supprimer_match.php" class="btn-add-match" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
+            <i class="fas fa-trash-alt"></i> Supprimer plusieurs
+        </a>
         </div>
 
         <!-- FILTRES -->
@@ -900,44 +918,50 @@ include "../includes/header.php";
                     </div>
                     
                     <!-- ACTIONS -->
-                    <div class="match-actions">
-                        <?php if ($matchAVenir): ?>
-                            <?php if (!$compositionComplete): ?>
-                                <a href="../feuille_match/composition.php?id_match=<?= $m["id_match"] ?>" 
-                                   class="btn-action btn-compose">
-                                    <i class="fas fa-futbol"></i> Composer
-                                </a>
-                            <?php else: ?>
-                                <a href="../feuille_match/composition.php?id_match=<?= $m["id_match"] ?>" 
-                                   class="btn-action btn-modify">
-                                    <i class="fas fa-edit"></i> Modifier
-                                </a>
-                            <?php endif; ?>
-                        <?php else: ?>
-                            <a href="../feuille_match/voir_composition.php?id_match=<?= $m["id_match"] ?>" 
-                               class="btn-action btn-view">
-                                <i class="fas fa-eye"></i> Voir
-                            </a>
-                            
-                            <?php if ($m['etat'] === 'JOUE'): ?>
-                                <a href="../feuille_match/evaluation.php?id_match=<?= $m["id_match"] ?>" 
-                                   class="btn-action btn-eval">
-                                    <i class="fas fa-star"></i> Évaluer
-                                </a>
-                            <?php endif; ?>
-                        <?php endif; ?>
-                        
-                        <a href="modifier_match.php?id_match=<?= $m["id_match"] ?>" 
-                           class="btn-action btn-edit">
-                            <i class="fas fa-cog"></i> Modifier
-                        </a>
-                        
-                        <a href="supprimer_match.php?id_match=<?= $m["id_match"] ?>" 
-                           class="btn-action btn-delete"
-                           onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce match ?');">
-                            <i class="fas fa-trash"></i> Supprimer
-                        </a>
-                    </div>
+<div class="match-actions">
+    <!-- BOUTON FEUILLE DE MATCH (TOUJOURS DISPONIBLE) -->
+    <a href="../feuille_match/composition.php?id_match=<?= $m["id_match"] ?>" 
+       class="btn-action btn-feuille">
+        <i class="fas fa-clipboard-list"></i> Feuille de Match
+    </a>
+    
+    <?php if ($matchAVenir): ?>
+        <?php if (!$compositionComplete): ?>
+            <a href="../feuille_match/composition.php?id_match=<?= $m["id_match"] ?>" 
+               class="btn-action btn-compose">
+                <i class="fas fa-futbol"></i> Composer
+            </a>
+        <?php else: ?>
+            <a href="../feuille_match/composition.php?id_match=<?= $m["id_match"] ?>" 
+               class="btn-action btn-modify">
+                <i class="fas fa-edit"></i> Modifier
+            </a>
+        <?php endif; ?>
+    <?php else: ?>
+        <a href="../feuille_match/voir_composition.php?id_match=<?= $m["id_match"] ?>" 
+           class="btn-action btn-view">
+            <i class="fas fa-eye"></i> Voir
+        </a>
+        
+        <?php if ($m['etat'] === 'JOUE'): ?>
+            <a href="../feuille_match/evaluation.php?id_match=<?= $m["id_match"] ?>" 
+               class="btn-action btn-eval">
+                <i class="fas fa-star"></i> Évaluer
+            </a>
+        <?php endif; ?>
+    <?php endif; ?>
+    
+    <a href="modifier_match.php?id_match=<?= $m["id_match"] ?>" 
+       class="btn-action btn-edit">
+        <i class="fas fa-cog"></i> Modifier
+    </a>
+    
+    <a href="supprimer_match.php?id=<?= $m['id_match'] ?>" 
+       class="btn-action btn-delete"
+       onclick="return confirm('Voulez-vous vraiment supprimer ce match ?')">
+       <i class="fas fa-trash"></i> Supprimer
+    </a>
+</div>
                 </div>
             <?php endforeach; ?>
         </div>
