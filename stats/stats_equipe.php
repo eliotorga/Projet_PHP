@@ -141,6 +141,13 @@ function calculerScoreImpact($joueur_id, $gestion_sportive) {
 }
 
 /* =======================
+   RÉCUPÉRATION DES FILTRES
+======================= */
+$filtre_statut = $_GET['statut'] ?? '';
+$recherche = $_GET['recherche'] ?? '';
+$tri = $_GET['tri'] ?? 'nom';
+
+/* =======================
    STATISTIQUES GÉNÉRALES
 ======================= */
 // Matchs
@@ -162,7 +169,7 @@ $performance_moyenne = $gestion_sportive->query("
     WHERE evaluation IS NOT NULL
 ")->fetchColumn();
 
-// Joueurs par statut
+// Joueurs par statut (pour le filtre)
 $joueurs_statut = $gestion_sportive->query("
     SELECT 
         s.libelle as statut,
@@ -202,19 +209,6 @@ foreach ($top_performers as &$joueur) {
 unset($joueur);
 
 /* =======================
-   DISTRIBUTION DES POSTES
-======================= */
-$distribution_postes = $gestion_sportive->query("
-    SELECT 
-        po.libelle as poste,
-        COUNT(DISTINCT p.id_joueur) as nb_joueurs
-    FROM participation p
-    JOIN poste po ON po.id_poste = p.id_poste
-    GROUP BY po.id_poste, po.libelle
-    ORDER BY nb_joueurs DESC
-")->fetchAll(PDO::FETCH_ASSOC);
-
-/* =======================
    STATISTIQUES DÉTAILLÉES DES JOUEURS
 ======================= */
 $joueurs_stats = $gestion_sportive->query("
@@ -233,7 +227,6 @@ $joueurs_stats = $gestion_sportive->query("
     JOIN statut s ON s.id_statut = j.id_statut
     LEFT JOIN participation p ON p.id_joueur = j.id_joueur
     GROUP BY j.id_joueur, j.nom, j.prenom, s.libelle, s.code
-    ORDER BY j.nom, j.prenom
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 // Ajout des statistiques supplémentaires pour chaque joueur
@@ -295,7 +288,56 @@ foreach ($joueurs_stats as &$joueur) {
 }
 unset($joueur);
 
-// Inclure la vue HTML
+/* =======================
+   FILTRAGE ET TRI DES DONNÉES
+======================= */
+$joueurs_filtres = $joueurs_stats;
+
+// Filtre par statut
+if (!empty($filtre_statut)) {
+    $joueurs_filtres = array_filter($joueurs_filtres, function($j) use ($filtre_statut) {
+        return $j['statut_code'] == $filtre_statut;
+    });
+}
+
+// Filtre par recherche (nom/prenom)
+if (!empty($recherche)) {
+    $recherche_lower = strtolower(trim($recherche));
+    $joueurs_filtres = array_filter($joueurs_filtres, function($j) use ($recherche_lower) {
+        $nom_complet = strtolower($j['prenom'] . ' ' . $j['nom']);
+        return strpos($nom_complet, $recherche_lower) !== false;
+    });
+}
+
+// Tri des joueurs
+usort($joueurs_filtres, function($a, $b) use ($tri) {
+    switch ($tri) {
+        case 'impact_desc':
+            return $b['score_impact'] <=> $a['score_impact'];
+        case 'impact_asc':
+            return $a['score_impact'] <=> $b['score_impact'];
+        case 'moyenne_desc':
+            $moyenne_a = $a['moyenne_notes'] ?? 0;
+            $moyenne_b = $b['moyenne_notes'] ?? 0;
+            return $moyenne_b <=> $moyenne_a;
+        case 'victoires_desc':
+            return $b['pct_victoires'] <=> $a['pct_victoires'];
+        case 'matchs_desc':
+            return $b['nb_matchs'] <=> $a['nb_matchs'];
+        case 'consecutifs_desc':
+            return $b['selections_consecutives'] <=> $a['selections_consecutives'];
+        default: // 'nom' (ordre alphabétique)
+            $nom_a = $a['nom'] . $a['prenom'];
+            $nom_b = $b['nom'] . $b['prenom'];
+            return strcmp($nom_a, $nom_b);
+    }
+});
+
+// Nombre total de joueurs (pour affichage)
+$total_joueurs = count($joueurs_stats);
+$joueurs_filtres_count = count($joueurs_filtres);
+
+// Inclure la vue
 include __DIR__ . "/../vues/stats_view.php";
 
 include __DIR__ . "/../includes/footer.php";
