@@ -7,19 +7,19 @@ include __DIR__ . "/../includes/header.php";
 
 // Vérifier ID
 if (!isset($_GET["id"])) {
-    die("<p style='color:red; font-weight:bold;'>ID match manquant.</p>");
+    die("<p class='error-message'>ID match manquant.</p>");
 }
 
 $id_match = intval($_GET["id"]);
 $match = getMatchById($gestion_sportive, $id_match);
 
 if (!$match) {
-    die("<p style='color:red; font-weight:bold;'>Match introuvable.</p>");
+    die("<p class='error-message'>Match introuvable.</p>");
 }
 
 // Match déjà joué ?
 if ($match["etat"] === "JOUE") {
-    die("<p style='color:red; font-weight:bold;'>Le résultat de ce match a déjà été saisi.</p>");
+    die("<p class='error-message'>Le résultat de ce match a déjà été saisi.</p>");
 }
 
 $error = "";
@@ -54,7 +54,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     </p>
 
     <?php if ($error): ?>
-        <p style="color:red; font-weight:bold;"><?= htmlspecialchars($error) ?></p>
+        <p class="error-message"><?= htmlspecialchars($error) ?></p>
     <?php endif; ?>
 
     <form method="POST">
@@ -67,25 +67,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         <input type="number" name="score_adverse" min="0" required>
         <br><br>
 
-        <button 
-            type="submit"
-            style="
-                padding:10px 18px; 
-                background:#28a745; 
-                color:white; 
-                border:none;
-                border-radius:6px;
-                cursor:pointer;
-            "
-        >
-            💾 Enregistrer le résultat
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Enregistrer
         </button>
 
-        <a href="liste_matchs.php" 
-           style="margin-left:20px; text-decoration:none;">↩️ Retour</a>
+        <a href="liste_matchs.php" class="back-link">
+            <i class="fas fa-arrow-left"></i> Retour
+        </a>
 
     </form>
 
 </div>
 
 <?php include __DIR__ . "/../includes/footer.php"; ?>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/resultats.css">
+<link rel="stylesheet" href="../assets/css/feuille_match.css">

@@ -1,0 +1,352 @@
+    :root {
+        --primary: #1e7a3c;
+        --primary-dark: #145c2f;
+        --secondary: #2ecc71;
+        --warning: #f39c12;
+        --danger: #e74c3c;
+        --info: #3498db;
+        --dark: #2c3e50;
+        --light: #ecf0f1;
+        --gray: #7f8c8d;
+        --shadow: 0 10px 30px rgba(0,0,0,0.15);
+        --radius: 12px;
+        --transition: all 0.3s ease;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Montserrat', sans-serif;
+    }
+
+    body {
+        background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+        color: var(--dark);
+        min-height: 100vh;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 30px 20px;
+    }
+
+    /* HEADER */
+    .header-back {
+        margin-bottom: 30px;
+    }
+
+    .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--dark);
+        text-decoration: none;
+        font-weight: 600;
+        padding: 10px 20px;
+        background: white;
+        border-radius: 50px;
+        box-shadow: var(--shadow);
+        transition: var(--transition);
+    }
+
+    .back-btn:hover {
+        transform: translateX(-5px);
+        background: var(--primary);
+        color: white;
+    }
+
+    /* PROFIL DU JOUEUR */
+    .player-profile {
+        background: white;
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        margin-bottom: 30px;
+    }
+
+    .profile-header {
+        background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+        color: white;
+        padding: 40px;
+        display: flex;
+        align-items: center;
+        gap: 30px;
+        flex-wrap: wrap;
+    }
+
+    .player-photo {
+        width: 150px;
+        height: 150px;
+        background: linear-gradient(135deg, #34495e, #2c3e50);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4rem;
+        color: white;
+        border: 5px solid rgba(255,255,255,0.2);
+    }
+
+    .player-info h1 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+    }
+
+    .player-details {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-top: 15px;
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255,255,255,0.1);
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+    }
+
+    .player-body {
+        padding: 30px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 30px;
+    }
+
+    /* STATISTIQUES */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: var(--radius);
+        padding: 25px;
+        box-shadow: var(--shadow);
+        text-align: center;
+        transition: var(--transition);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+    }
+
+    .stat-card.matchs { border-top: 4px solid var(--info); }
+    .stat-card.evaluation { border-top: 4px solid var(--warning); }
+    .stat-card.titulaire { border-top: 4px solid var(--secondary); }
+    .stat-card.postes { border-top: 4px solid #9b59b6; }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 10px 0;
+    }
+
+    .stat-matchs .stat-value { color: var(--info); }
+    .stat-evaluation .stat-value { color: var(--warning); }
+    .stat-titulaire .stat-value { color: var(--secondary); }
+
+    .stat-label {
+        color: var(--gray);
+        font-size: 0.9rem;
+    }
+
+    /* LISTE DES MATCHS */
+    .matchs-container {
+        background: white;
+        border-radius: var(--radius);
+        padding: 30px;
+        box-shadow: var(--shadow);
+        margin-bottom: 30px;
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f3f8;
+    }
+
+    .section-title h2 {
+        font-size: 1.5rem;
+        color: var(--dark);
+    }
+
+    .matchs-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .match-item {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        background: #f8fafc;
+        border-radius: 10px;
+        transition: var(--transition);
+        border-left: 4px solid #ddd;
+    }
+
+    .match-item:hover {
+        background: #edf2f7;
+        transform: translateX(5px);
+    }
+
+    .match-item.victoire { border-left-color: var(--secondary); }
+    .match-item.defaite { border-left-color: var(--danger); }
+    .match-item.nul { border-left-color: #f39c12; }
+
+    .match-date {
+        min-width: 100px;
+        font-weight: 600;
+        color: var(--dark);
+    }
+
+    .match-info {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .match-adversaire {
+        font-weight: 600;
+        color: var(--dark);
+        min-width: 200px;
+    }
+
+    .match-details {
+        display: flex;
+        gap: 15px;
+        font-size: 0.9rem;
+        color: var(--gray);
+    }
+
+    .match-evaluation {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: #f39c12;
+        font-weight: 600;
+    }
+
+    /* COMMENTAIRES */
+    .comments-container {
+        background: white;
+        border-radius: var(--radius);
+        padding: 30px;
+        box-shadow: var(--shadow);
+    }
+
+    .comment-item {
+        padding: 15px;
+        background: #f8fafc;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        border-left: 4px solid var(--info);
+    }
+
+    .comment-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        font-size: 0.9rem;
+        color: var(--gray);
+    }
+
+    .comment-text {
+        line-height: 1.6;
+        color: var(--dark);
+    }
+
+    /* BADGES */
+    .badge {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .badge-statut-ACT { background: #e8f5e9; color: #2e7d32; }
+    .badge-statut-BLE { background: #fff8e1; color: #f57c00; }
+    .badge-statut-SUS { background: #ffebee; color: #c62828; }
+    .badge-statut-ABS { background: #eceff1; color: #455a64; }
+
+    /* POSTES */
+    .postes-container {
+        margin-top: 30px;
+    }
+
+    .poste-bar {
+        margin-bottom: 15px;
+    }
+
+    .poste-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+
+    .poste-label {
+        font-weight: 600;
+        color: var(--dark);
+    }
+
+    .poste-count {
+        color: var(--gray);
+        font-size: 0.9rem;
+    }
+
+    .poste-progress {
+        height: 10px;
+        background: #e0e6ed;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+
+    .poste-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary), var(--secondary));
+        border-radius: 5px;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+        .profile-header {
+            flex-direction: column;
+            text-align: center;
+            padding: 30px 20px;
+        }
+        
+        .player-details {
+            justify-content: center;
+        }
+        
+        .match-info {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .match-details {
+            flex-wrap: wrap;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+    }

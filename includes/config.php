@@ -7,13 +7,23 @@
 
 
 /* ---------------------------
+   CONFIGURATION DE SÉCURITÉ
+----------------------------*/
+
+// Configuration du hachage des mots de passe
+define('PASSWORD_ALGO', PASSWORD_BCRYPT);
+define('PASSWORD_OPTIONS', [
+    'cost' => 12  // Coût du hachage (plus élevé = plus sécurisé mais plus lent)
+]);
+
+
+/* ---------------------------
    IDENTIFIANTS DE CONNEXION
    (exigence du professeur : PAS DE TABLE utilisateur)
 ----------------------------*/
 
 $AUTH_LOGIN = "admin";  // Nom d'utilisateur
-// Mot de passe = "admin" HASHÉ (à changer ensuite)
-$AUTH_HASH = password_hash("admin", PASSWORD_DEFAULT);
+$AUTH_PASSWORD = "admin"; // Mot de passe en clair (à ne faire qu'en développement)
 
 
 /* ---------------------------

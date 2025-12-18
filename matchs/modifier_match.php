@@ -52,6 +52,8 @@ include "../includes/header.php";
     <title>Modifier le Match - <?= htmlspecialchars($match["adversaire"]) ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/modifier_match.css">
+    <!-- Styles déplacés vers modifier_match.css
     <style>
     :root {
         --primary: #1e7a3c;
@@ -319,7 +321,7 @@ include "../includes/header.php";
         color: var(--dark);
         font-weight: 600;
         cursor: pointer;
-        transition: var(--transition;
+        transition: var(--transition);
         text-align: center;
         display: flex;
         align-items: center;
@@ -540,6 +542,7 @@ include "../includes/header.php";
         }
     }
     </style>
+    -->
 </head>
 <body>
     <div class="container">
@@ -629,17 +632,10 @@ include "../includes/header.php";
                     <label class="form-label required">
                         <i class="fas fa-map-marker-alt"></i> Lieu du Match
                     </label>
-                    <div class="state-buttons">
-                        <button type="button" class="state-btn <?= $match["lieu"] === "DOMICILE" ? "active" : "" ?>"
-                                data-value="DOMICILE">
-                            <i class="fas fa-home"></i> Domicile
-                        </button>
-                        <button type="button" class="state-btn <?= $match["lieu"] === "EXTERIEUR" ? "active" : "" ?>"
-                                data-value="EXTERIEUR">
-                            <i class="fas fa-plane"></i> Extérieur
-                        </button>
-                    </div>
-                    <input type="hidden" name="lieu" id="lieuInput" value="<?= $match["lieu"] ?>" required>
+                    <select name="lieu" class="form-control" required>
+                        <option value="DOMICILE" <?= ($match["lieu"] === "DOMICILE") ? "selected" : "" ?>>Domicile</option>
+                        <option value="EXTERIEUR" <?= ($match["lieu"] === "EXTERIEUR") ? "selected" : "" ?>>Extérieur</option>
+                    </select>
                 </div>
                 
                 <!-- Score -->
@@ -677,21 +673,20 @@ include "../includes/header.php";
                     <label class="form-label">
                         <i class="fas fa-flag-checkered"></i> Résultat
                     </label>
-                    <div class="result-buttons" id="resultButtons">
-                        <button type="button" class="result-btn victoire" data-value="VICTOIRE">
-                            <i class="fas fa-trophy"></i>
-                            Victoire
-                        </button>
-                        <button type="button" class="result-btn defaite" data-value="DEFAITE">
-                            <i class="fas fa-times-circle"></i>
-                            Défaite
-                        </button>
-                        <button type="button" class="result-btn nul" data-value="NUL">
-                            <i class="fas fa-handshake"></i>
-                            Match nul
-                        </button>
-                    </div>
-                    <input type="hidden" name="resultat" id="resultatInput" value="<?= $match["resultat"] ?? '' ?>">
+                    <?php
+                        $resultat_initial = $match["resultat"] ?? '';
+                        if (!$resultat_initial && $match["etat"] === "JOUE" && $match["score_equipe"] !== null && $match["score_adverse"] !== null) {
+                            if ((int)$match["score_equipe"] > (int)$match["score_adverse"]) $resultat_initial = "VICTOIRE";
+                            elseif ((int)$match["score_equipe"] < (int)$match["score_adverse"]) $resultat_initial = "DEFAITE";
+                            else $resultat_initial = "NUL";
+                        }
+                    ?>
+                    <select name="resultat" class="form-control">
+                        <option value="" <?= $resultat_initial === '' ? "selected" : "" ?>>—</option>
+                        <option value="VICTOIRE" <?= $resultat_initial === 'VICTOIRE' ? "selected" : "" ?>>Victoire</option>
+                        <option value="DEFAITE" <?= $resultat_initial === 'DEFAITE' ? "selected" : "" ?>>Défaite</option>
+                        <option value="NUL" <?= $resultat_initial === 'NUL' ? "selected" : "" ?>>Match nul</option>
+                    </select>
                 </div>
                 
                 <!-- État du Match -->
@@ -699,18 +694,11 @@ include "../includes/header.php";
                     <label class="form-label required">
                         <i class="fas fa-clipboard-check"></i> État du Match
                     </label>
-                    <div class="state-buttons" id="stateButtons">
-                        <button type="button" class="state-btn A_PREPARER" data-value="A_PREPARER">
-                            <i class="fas fa-clock"></i> À préparer
-                        </button>
-                        <button type="button" class="state-btn PREPARE" data-value="PREPARE">
-                            <i class="fas fa-check-circle"></i> Préparé
-                        </button>
-                        <button type="button" class="state-btn JOUE" data-value="JOUE">
-                            <i class="fas fa-play-circle"></i> Joué
-                        </button>
-                    </div>
-                    <input type="hidden" name="etat" id="etatInput" value="<?= $match["etat"] ?>" required>
+                    <select name="etat" class="form-control" required>
+                        <option value="A_PREPARER" <?= ($match["etat"] === "A_PREPARER") ? "selected" : "" ?>>À préparer</option>
+                        <option value="PREPARE" <?= ($match["etat"] === "PREPARE") ? "selected" : "" ?>>Préparé</option>
+                        <option value="JOUE" <?= ($match["etat"] === "JOUE") ? "selected" : "" ?>>Joué</option>
+                    </select>
                 </div>
             </div>
             
@@ -734,231 +722,7 @@ include "../includes/header.php";
         </form>
     </div>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('editMatchForm');
-        const submitBtn = document.getElementById('submitBtn');
-        
-        // Gestion des boutons de lieu
-        const lieuButtons = document.querySelectorAll('.state-buttons:first-child .state-btn');
-        const lieuInput = document.getElementById('lieuInput');
-        
-        lieuButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
-                lieuButtons.forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                lieuInput.value = this.dataset.value;
-            });
-        });
-        
-        // Initialiser le bouton actif pour le lieu
-        document.querySelector(`.state-btn[data-value="${lieuInput.value}"]`).classList.add('active');
-        
-        // Gestion des boutons de résultat
-        const resultButtons = document.querySelectorAll('#resultButtons .result-btn');
-        const resultatInput = document.getElementById('resultatInput');
-        
-        // Initialiser le bouton actif pour le résultat
-        if (resultatInput.value) {
-            const activeResultBtn = document.querySelector(`#resultButtons .result-btn[data-value="${resultatInput.value}"]`);
-            if (activeResultBtn) {
-                activeResultBtn.classList.add('active');
-            }
-        }
-        
-        resultButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
-                resultButtons.forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                resultatInput.value = this.dataset.value;
-            });
-        });
-        
-        // Gestion des boutons d'état
-        const stateButtons = document.querySelectorAll('#stateButtons .state-btn');
-        const etatInput = document.getElementById('etatInput');
-        
-        // Initialiser le bouton actif pour l'état
-        document.querySelector(`#stateButtons .state-btn[data-value="${etatInput.value}"]`).classList.add('active');
-        
-        stateButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
-                stateButtons.forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                etatInput.value = this.dataset.value;
-                
-                // Si on passe à "Joué", proposer de remplir le résultat
-                if (this.dataset.value === 'JOUE' && !resultatInput.value) {
-                    showResultSuggestion();
-                }
-            });
-        });
-        
-        function showResultSuggestion() {
-            const scoreEquipe = document.getElementById('score_equipe').value;
-            const scoreAdverse = document.getElementById('score_adverse').value;
-            
-            if (scoreEquipe && scoreAdverse) {
-                if (parseInt(scoreEquipe) > parseInt(scoreAdverse)) {
-                    resultatInput.value = 'VICTOIRE';
-                    document.querySelector('.result-btn.victoire').classList.add('active');
-                } else if (parseInt(scoreEquipe) < parseInt(scoreAdverse)) {
-                    resultatInput.value = 'DEFAITE';
-                    document.querySelector('.result-btn.defaite').classList.add('active');
-                } else {
-                    resultatInput.value = 'NUL';
-                    document.querySelector('.result-btn.nul').classList.add('active');
-                }
-                
-                // Afficher un message
-                showNotification('Résultat suggéré en fonction du score', 'info');
-            }
-        }
-        
-        // Auto-suggestion de résultat basé sur le score
-        const scoreInputs = document.querySelectorAll('#score_equipe, #score_adverse');
-        scoreInputs.forEach(input => {
-            input.addEventListener('change', function() {
-                if (etatInput.value === 'JOUE') {
-                    showResultSuggestion();
-                }
-            });
-        });
-        
-        // Validation de la date
-        const dateInput = document.getElementById('date_heure');
-        dateInput.addEventListener('change', function() {
-            const selectedDate = new Date(this.value);
-            const now = new Date();
-            const minDate = new Date('2023-01-01');
-            const maxDate = new Date('2026-12-31');
-            
-            if (selectedDate < minDate || selectedDate > maxDate) {
-                this.style.borderColor = 'var(--danger)';
-                showNotification('La date doit être comprise entre 2023 et 2026', 'error');
-            } else {
-                this.style.borderColor = '#e5e7eb';
-            }
-        });
-        
-        // Validation du formulaire
-        form.addEventListener('submit', function(e) {
-            const adversaire = document.getElementById('adversaire').value.trim();
-            const dateHeure = document.getElementById('date_heure').value;
-            const scoreEquipe = document.getElementById('score_equipe').value;
-            const scoreAdverse = document.getElementById('score_adverse').value;
-            const etat = etatInput.value;
-            const resultat = resultatInput.value;
-            
-            let errors = [];
-            
-            if (!adversaire) errors.push("L'adversaire est requis");
-            if (!dateHeure) errors.push("La date et l'heure sont requises");
-            if (!etat) errors.push("L'état du match est requis");
-            
-            // Validation des scores
-            if ((scoreEquipe || scoreAdverse) && etat !== 'JOUE') {
-                errors.push("Les scores ne peuvent être saisis que pour un match joué");
-            }
-            
-            if (etat === 'JOUE' && resultat && (!scoreEquipe || !scoreAdverse)) {
-                errors.push("Pour un match joué avec résultat, les deux scores doivent être renseignés");
-            }
-            
-            if (scoreEquipe && scoreAdverse) {
-                if (parseInt(scoreEquipe) < 0 || parseInt(scoreAdverse) < 0) {
-                    errors.push("Les scores ne peuvent pas être négatifs");
-                }
-                if (parseInt(scoreEquipe) > 20 || parseInt(scoreAdverse) > 20) {
-                    errors.push("Les scores ne peuvent pas dépasser 20");
-                }
-            }
-            
-            if (errors.length > 0) {
-                e.preventDefault();
-                showNotification(errors.join('<br>'), 'error');
-                return false;
-            }
-            
-            // Animation de chargement
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
-            submitBtn.disabled = true;
-            submitBtn.style.opacity = '0.8';
-            
-            return true;
-        });
-        
-        function showNotification(message, type) {
-            // Supprimer les notifications existantes
-            const existingNotifications = document.querySelectorAll('.notification');
-            existingNotifications.forEach(notif => notif.remove());
-            
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.innerHTML = `
-                <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
-                <span>${message}</span>
-            `;
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 1rem 1.5rem;
-                background: ${type === 'error' ? '#fef2f2' : '#ecfdf5'};
-                color: ${type === 'error' ? '#dc2626' : '#047857'};
-                border-radius: 8px;
-                box-shadow: var(--shadow);
-                z-index: 1000;
-                display: flex;
-                align-items: center;
-                gap: 0.75rem;
-                border-left: 4px solid ${type === 'error' ? '#dc2626' : '#10b981'};
-                animation: slideInRight 0.3s ease;
-                max-width: 400px;
-            `;
-            
-            document.body.appendChild(notification);
-            
-            // Auto-dismiss after 5 seconds
-            setTimeout(() => {
-                notification.style.animation = 'slideOutRight 0.3s ease';
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.remove();
-                    }
-                }, 300);
-            }, 5000);
-            
-            // Add animations
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes slideInRight {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-                @keyframes slideOutRight {
-                    from { transform: translateX(0); opacity: 1; }
-                    to { transform: translateX(100%); opacity: 0; }
-                }
-            `;
-            if (!document.querySelector('#notification-animations')) {
-                style.id = 'notification-animations';
-                document.head.appendChild(style);
-            }
-        }
-        
-        // Add data to window for debugging
-        window.matchData = {
-            id: <?= $id_match ?>,
-            adversaire: "<?= htmlspecialchars($match["adversaire"]) ?>",
-            date: "<?= date("d/m/Y H:i", strtotime($match["date_heure"])) ?>",
-            etat: "<?= $match["etat"] ?>"
-        };
-        
-        // Focus sur le premier champ
-        document.getElementById('adversaire').focus();
-    });
-    </script>
+    
 </body>
 </html>
 

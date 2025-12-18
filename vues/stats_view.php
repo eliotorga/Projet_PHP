@@ -7,90 +7,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     <!-- Lien vers votre fichier CSS -->
-    <link rel="stylesheet" href="../assets/css/stats.css">s
+    <link rel="stylesheet" href="../assets/css/stats.css">
 </head>
 <body>
     <div class="page-container">
         <!-- HEADER -->
         <div class="page-header">
-            <h1><i class="fas fa-chart-bar"></i> Tableau de Bord Statistiques</h1>
+            <h1><i class="fas fa-bolt"></i> Tableau de Bord Statistiques</h1>
             <p>Analyses détaillées des performances de l'équipe et des joueurs</p>
-        </div>
-
-        <!-- CARTE SCORE D'IMPACT -->
-        <div class="impact-card">
-            <div class="impact-header">
-                <div class="impact-icon">
-                    <i class="fas fa-bolt"></i>
-                </div>
-                <div class="impact-info">
-                    <h3>Système de Score d'Impact</h3>
-                    <p>Algorithme prédictif pour estimer les chances de gagner avec chaque joueur</p>
-                </div>
-            </div>
-            <div class="score-container">
-                <div class="score-circle">
-                    <svg width="120" height="120" viewBox="0 0 120 120">
-                        <circle class="circle-bg" cx="60" cy="60" r="50"></circle>
-                        <circle class="circle-progress" cx="60" cy="60" r="50" 
-                                style="stroke-dasharray: 314; stroke-dashoffset: <?= 314 - (314 * ($performance_moyenne * 100 / 600)) / 100 ?>; stroke: <?= 
-                                    $performance_moyenne >= 4.5 ? '#2ecc71' : 
-                                    ($performance_moyenne >= 3 ? '#f39c12' : '#e74c3c') ?>;">
-                        </circle>
-                    </svg>
-                    <div class="circle-text">
-                        <div class="circle-value"><?= number_format($performance_moyenne, 1) ?></div>
-                        <div class="circle-label">Performance globale</div>
-                    </div>
-                </div>
-                <div class="facteurs-container">
-                    <div class="facteur-item">
-                        <div class="facteur-label">
-                            <span class="facteur-nom">Moyenne des évaluations</span>
-                            <span class="facteur-valeur">30%</span>
-                        </div>
-                        <div class="facteur-bar">
-                            <div class="facteur-fill" style="width: 100%"></div>
-                        </div>
-                    </div>
-                    <div class="facteur-item">
-                        <div class="facteur-label">
-                            <span class="facteur-nom">Pourcentage de victoires</span>
-                            <span class="facteur-valeur">30%</span>
-                        </div>
-                        <div class="facteur-bar">
-                            <div class="facteur-fill" style="width: 100%"></div>
-                        </div>
-                    </div>
-                    <div class="facteur-item">
-                        <div class="facteur-label">
-                            <span class="facteur-nom">Régularité (sélections consécutives)</span>
-                            <span class="facteur-valeur">20%</span>
-                        </div>
-                        <div class="facteur-bar">
-                            <div class="facteur-fill" style="width: 100%"></div>
-                        </div>
-                    </div>
-                    <div class="facteur-item">
-                        <div class="facteur-label">
-                            <span class="facteur-nom">Performance au poste</span>
-                            <span class="facteur-valeur">10%</span>
-                        </div>
-                        <div class="facteur-bar">
-                            <div class="facteur-fill" style="width: 100%"></div>
-                        </div>
-                    </div>
-                    <div class="facteur-item">
-                        <div class="facteur-label">
-                            <span class="facteur-nom">Expérience (matchs joués)</span>
-                            <span class="facteur-valeur">10%</span>
-                        </div>
-                        <div class="facteur-bar">
-                            <div class="facteur-fill" style="width: 100%"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <!-- TOP PERFORMERS -->

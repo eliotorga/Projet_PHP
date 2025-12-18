@@ -1,46 +1,36 @@
 <?php
 session_start();
-
-/*
- |------------------------------------------
- | IDENTIFIANTS (en dur, conforme au sujet)
- |------------------------------------------
- */
-$AUTH_LOGIN = "admin";
-$AUTH_PASSWORD = "admin";
+require_once __DIR__ . '/includes/config.php';
 
 $error = "";
 
-/*
- |------------------------------------------
- | Déjà connecté → redirection
- |------------------------------------------
- */
+// Si déjà connecté, on redirige
 if (isset($_SESSION["user_id"])) {
     header("Location: index.php");
     exit;
 }
 
-/*
- |------------------------------------------
- | Traitement formulaire
- |------------------------------------------
- */
+// Traitement du formulaire
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $login = trim($_POST["login"] ?? "");
     $password = $_POST["password"] ?? "";
 
-    if ($login !== $AUTH_LOGIN || $password !== $AUTH_PASSWORD) {
-        $error = "Identifiant ou mot de passe incorrect.";
-    } else {
-        session_regenerate_id(true);
+    // Vérification simple des identifiants
+    if ($login === $AUTH_LOGIN && $password === $AUTH_PASSWORD) {
+        // Connexion réussie
         $_SESSION["user_id"] = $login;
         $_SESSION["last_activity"] = time();
-
-        // Redirection avec message de succès
-        $_SESSION['login_success'] = true;
+        
+        // Protection basique
+        $_SESSION['user_agent'] = $_SERVER['HTTP_USER_AGENT'];
+        $_SESSION['ip_address'] = $_SERVER['REMOTE_ADDR'];
+        
         header("Location: index.php");
         exit;
+    } else {
+        $error = "Identifiant ou mot de passe incorrect.";
+        // Délai pour ralentir les attaques par force brute
+        usleep(500000); // 0.5 seconde
     }
 }
 

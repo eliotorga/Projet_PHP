@@ -15,7 +15,7 @@ $matches = getAllMatches($gestion_sportive);
 
 <?php foreach ($matches as $match): ?>
 
-    <div class="card" style="margin-bottom: 25px; padding: 20px;">
+    <div class="match-card">
 
         <!-- TITRE DU MATCH -->
         <h3>
@@ -28,12 +28,9 @@ $matches = getAllMatches($gestion_sportive);
         <p>
             <strong>Résultat :</strong>
             <?php if ($match["resultat"] === null): ?>
-                <span style="color: grey;">Non renseigné</span>
+                <span class="match-result">Non renseigné</span>
             <?php else: ?>
-                <?php if ($match["resultat"] === "VICTOIRE") $color = "green";
-                      elseif ($match["resultat"] === "DEFAITE") $color = "red";
-                      else $color = "orange"; ?>
-                <span style="color: <?= $color ?>; font-weight: bold;">
+                <span class="match-result <?= strtolower($match["resultat"]); ?>">
                     <?= $match["resultat"] ?>
                 </span>
             <?php endif; ?>
@@ -44,7 +41,7 @@ $matches = getAllMatches($gestion_sportive);
         $compo = getParticipationByMatch($gestion_sportive, $match["id_match"]);
 
         if (empty($compo)): ?>
-            <p style="color:red;">Aucune composition enregistrée.</p>
+            <p class="no-composition">Aucune composition enregistrée.</p>
             </div>
             <?php continue; ?>
         <?php endif; ?>

@@ -39,71 +39,170 @@ $defaites  = $res["DEFAITE"] ?? 0;
 $nuls      = $res["NUL"] ?? 0;
 
 /* =======================
-   LISTE DES JOUEURS
+   LISTE DES JOUEURS & STATS
 ======================= */
-$joueurs = $gestion_sportive->query("
+$sql = "
     SELECT j.id_joueur, j.nom, j.prenom, s.libelle AS statut
     FROM joueur j
     JOIN statut s ON s.id_statut = j.id_statut
-    ORDER BY j.nom, j.prenom
-")->fetchAll(PDO::FETCH_ASSOC);
+";
+
+// Filtres SQL de base (pour le statut si possible, mais on peut tout faire en PHP si on veut filtrer sur des champs calculés)
+$params = [];
+$where = [];
+
+// On récupère tous les joueurs pour le calcul des stats
+$joueurs = $gestion_sportive->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 
 /* =======================
-   MATCHS JOUÉS (ordre décroissant)
+   CALCUL DES STATS (PHP)
 ======================= */
-$matchsJoues = $gestion_sportive->query("
-    SELECT id_match
-    FROM matchs
-    WHERE etat='JOUE'
-    ORDER BY date_heure DESC
-")->fetchAll(PDO::FETCH_COLUMN);
+$statsData = [];
+
+foreach ($joueurs as $j) {
+    $id = $j["id_joueur"];
+    $nomComplet = $j["prenom"] . " " . $j["nom"];
+    $statut = $j["statut"];
+
+    /* Titularisations / remplacements */
+    $stmt = $gestion_sportive->prepare("
+        SELECT
+            SUM(role='TITULAIRE') AS titu,
+            SUM(role='REMPLACANT') AS remp
+        FROM participation
+        WHERE id_joueur=?
+    ");
+    $stmt->execute([$id]);
+    $roles = $stmt->fetch(PDO::FETCH_ASSOC);
+    $titu = (int)($roles["titu"] ?? 0);
+    $remp = (int)($roles["remp"] ?? 0);
+
+    /* Moyenne des évaluations */
+    $stmt = $gestion_sportive->prepare("
+        SELECT ROUND(AVG(evaluation),2)
+        FROM participation
+        WHERE id_joueur=? AND evaluation IS NOT NULL
+    ");
+    $stmt->execute([$id]);
+    $moy = $stmt->fetchColumn();
+    $moyVal = $moy ? (float)$moy : 0;
+    $moyDisp = $moy ?? "—";
+
+    /* Poste préféré (meilleure moyenne) */
+    $stmt = $gestion_sportive->prepare("
+        SELECT po.libelle
+        FROM participation pa
+        JOIN poste po ON po.id_poste = pa.id_poste
+        WHERE pa.id_joueur=? AND pa.evaluation IS NOT NULL
+        GROUP BY pa.id_poste
+        ORDER BY AVG(pa.evaluation) DESC
+        LIMIT 1
+    ");
+    $stmt->execute([$id]);
+    $poste = $stmt->fetchColumn() ?: "—";
+
+    /* % matchs gagnés joués */
+    $stmt = $gestion_sportive->prepare("
+        SELECT COUNT(*) total,
+           SUM(m.resultat='VICTOIRE') wins
+        FROM participation pa
+        JOIN matchs m ON m.id_match = pa.id_match
+        WHERE pa.id_joueur=? AND m.etat='JOUE'
+    ");
+    $stmt->execute([$id]);
+    $w = $stmt->fetch(PDO::FETCH_ASSOC);
+    $pctWinVal = $w["total"] > 0 ? pct($w["wins"], $w["total"]) : 0;
+    $pctWinDisp = $w["total"] > 0 ? $pctWinVal." %" : "—";
+
+    /* Sélections consécutives */
+    $consecutifs = 0;
+    foreach ($matchsJoues as $mid) {
+        $stmt = $gestion_sportive->prepare("
+            SELECT COUNT(*) FROM participation
+            WHERE id_match=? AND id_joueur=?
+        ");
+        $stmt->execute([$mid, $id]);
+        if ($stmt->fetchColumn() > 0) $consecutifs++;
+        else break;
+    }
+
+    $statsData[] = [
+        'id' => $id,
+        'nom' => $nomComplet,
+        'statut' => $statut,
+        'poste' => $poste,
+        'titu' => $titu,
+        'remp' => $remp,
+        'moy' => $moyVal,
+        'moy_disp' => $moyDisp,
+        'pct_win' => $pctWinVal,
+        'pct_win_disp' => $pctWinDisp,
+        'consecutifs' => $consecutifs
+    ];
+}
+
+/* =======================
+   FILTRAGE (PHP)
+======================= */
+$filtreStatut = $_GET['statut'] ?? '';
+$recherche = trim($_GET['search'] ?? '');
+
+if ($filtreStatut || $recherche) {
+    $statsData = array_filter($statsData, function($row) use ($filtreStatut, $recherche) {
+        // Filtre Statut
+        if ($filtreStatut && $row['statut'] !== $filtreStatut) {
+            return false;
+        }
+        // Filtre Recherche
+        if ($recherche && stripos($row['nom'], $recherche) === false) {
+            return false;
+        }
+        return true;
+    });
+}
+
+/* =======================
+   TRI (PHP)
+======================= */
+$sort = $_GET['sort'] ?? 'nom';
+$order = $_GET['order'] ?? 'asc';
+$nextOrder = $order === 'asc' ? 'desc' : 'asc';
+
+usort($statsData, function($a, $b) use ($sort, $order) {
+    $valA = $a[$sort] ?? $a['nom'];
+    $valB = $b[$sort] ?? $b['nom'];
+
+    if ($valA == $valB) return 0;
+    
+    // Tri numérique pour certaines colonnes
+    if (is_numeric($valA) && is_numeric($valB)) {
+        return ($order === 'asc') ? ($valA - $valB) : ($valB - $valA);
+    }
+    
+    // Tri alphabétique
+    return ($order === 'asc') ? strcasecmp($valA, $valB) : strcasecmp($valB, $valA);
+});
+
+// Helper pour les liens de tri
+function sortLink($col, $label, $currentSort, $currentOrder) {
+    $newOrder = ($currentSort === $col && $currentOrder === 'asc') ? 'desc' : 'asc';
+    $icon = '';
+    if ($currentSort === $col) {
+        $icon = $currentOrder === 'asc' ? ' ▲' : ' ▼';
+    }
+    
+    // Garder les filtres actuels dans l'URL
+    $params = $_GET;
+    $params['sort'] = $col;
+    $params['order'] = $newOrder;
+    $url = '?' . http_build_query($params);
+    
+    return "<a href='$url' style='color: white; text-decoration: none;'>$label$icon</a>";
+}
+
 ?>
 
-<style>
-h2 { color:#1e293b; margin-top:25px; }
-
-.stats-equipe {
-    background:#f8fafc;
-    border-left:6px solid #2563eb;
-    padding:15px;
-    margin-bottom:20px;
-    border-radius:6px;
-}
-.stats-equipe li { margin:6px 0; font-size:16px; }
-
-.filtres {
-    display:flex;
-    gap:15px;
-    margin:15px 0;
-}
-
-table {
-    width:100%;
-    border-collapse:collapse;
-    background:white;
-}
-thead { background:#0f172a; color:white; }
-th, td {
-    padding:10px;
-    text-align:center;
-}
-th {
-    cursor:pointer;
-    user-select:none;
-}
-tbody tr:nth-child(even) { background:#f1f5f9; }
-tbody tr:hover { background:#e0f2fe; }
-
-.badge {
-    padding:4px 8px;
-    border-radius:6px;
-    font-weight:bold;
-    font-size:13px;
-}
-.actif { background:#dcfce7; color:#166534; }
-.blesse { background:#fee2e2; color:#991b1b; }
-.suspendu { background:#fef9c3; color:#854d0e; }
-</style>
+<link rel="stylesheet" href="../assets/css/stats_joueurs_pro.css">
 
 <h2>📊 Statistiques de l’équipe</h2>
 
@@ -118,147 +217,62 @@ tbody tr:hover { background:#e0f2fe; }
 <h2>📈 Statistiques détaillées des joueurs</h2>
 
 <div class="filtres">
-    <select id="filtreStatut">
-        <option value="">Tous les statuts</option>
-        <option value="Actif">Actif</option>
-        <option value="Blessé">Blessé</option>
-        <option value="Suspendu">Suspendu</option>
-    </select>
+    <form method="GET" action="">
+        <select name="statut">
+            <option value="">Tous les statuts</option>
+            <option value="Actif" <?= $filtreStatut === 'Actif' ? 'selected' : '' ?>>Actif</option>
+            <option value="Blessé" <?= $filtreStatut === 'Blessé' ? 'selected' : '' ?>>Blessé</option>
+            <option value="Suspendu" <?= $filtreStatut === 'Suspendu' ? 'selected' : '' ?>>Suspendu</option>
+        </select>
 
-    <input type="text" id="recherche" placeholder="Rechercher un joueur…">
+        <input type="text" name="search" placeholder="Rechercher un joueur…" value="<?= htmlspecialchars($recherche) ?>">
+        
+        <button type="submit">Filtrer</button>
+        <?php if($filtreStatut || $recherche): ?>
+            <a href="?" style="margin-left: 10px; color: #64748b; text-decoration: none;">Réinitialiser</a>
+        <?php endif; ?>
+    </form>
 </div>
 
 <table id="tableStats">
 <thead>
 <tr>
-    <th>Joueur</th>
-    <th>Statut</th>
+    <th><?= sortLink('nom', 'Joueur', $sort, $order) ?></th>
+    <th><?= sortLink('statut', 'Statut', $sort, $order) ?></th>
     <th>Poste préféré</th>
-    <th>Titularisations</th>
-    <th>Remplacements</th>
-    <th>Moy. notes</th>
-    <th>% victoires</th>
-    <th>Sélections consécutives</th>
+    <th><?= sortLink('titu', 'Titularisations', $sort, $order) ?></th>
+    <th><?= sortLink('remp', 'Remplacements', $sort, $order) ?></th>
+    <th><?= sortLink('moy', 'Moy. notes', $sort, $order) ?></th>
+    <th><?= sortLink('pct_win', '% victoires', $sort, $order) ?></th>
+    <th><?= sortLink('consecutifs', 'Sélections consécutives', $sort, $order) ?></th>
 </tr>
 </thead>
 <tbody>
 
-<?php foreach ($joueurs as $j): ?>
-<?php
-$id = $j["id_joueur"];
-
-/* Titularisations / remplacements */
-$stmt = $gestion_sportive->prepare("
-    SELECT
-        SUM(role='TITULAIRE') AS titu,
-        SUM(role='REMPLACANT') AS remp
-    FROM participation
-    WHERE id_joueur=?
-");
-$stmt->execute([$id]);
-$roles = $stmt->fetch(PDO::FETCH_ASSOC);
-
-/* Moyenne des évaluations */
-$stmt = $gestion_sportive->prepare("
-    SELECT ROUND(AVG(evaluation),2)
-    FROM participation
-    WHERE id_joueur=? AND evaluation IS NOT NULL
-");
-$stmt->execute([$id]);
-$moy = $stmt->fetchColumn();
-
-/* Poste préféré (meilleure moyenne) */
-$stmt = $gestion_sportive->prepare("
-    SELECT po.libelle
-    FROM participation pa
-    JOIN poste po ON po.id_poste = pa.id_poste
-    WHERE pa.id_joueur=? AND pa.evaluation IS NOT NULL
-    GROUP BY pa.id_poste
-    ORDER BY AVG(pa.evaluation) DESC
-    LIMIT 1
-");
-$stmt->execute([$id]);
-$poste = $stmt->fetchColumn() ?: "—";
-
-/* % matchs gagnés joués */
-$stmt = $gestion_sportive->prepare("
-    SELECT COUNT(*) total,
-           SUM(m.resultat='VICTOIRE') wins
-    FROM participation pa
-    JOIN matchs m ON m.id_match = pa.id_match
-    WHERE pa.id_joueur=? AND m.etat='JOUE'
-");
-$stmt->execute([$id]);
-$w = $stmt->fetch(PDO::FETCH_ASSOC);
-$pctWin = $w["total"] > 0 ? pct($w["wins"], $w["total"])." %" : "—";
-
-/* Sélections consécutives */
-$consecutifs = 0;
-foreach ($matchsJoues as $mid) {
-    $stmt = $gestion_sportive->prepare("
-        SELECT COUNT(*) FROM participation
-        WHERE id_match=? AND id_joueur=?
-    ");
-    $stmt->execute([$mid, $id]);
-    if ($stmt->fetchColumn() > 0) $consecutifs++;
-    else break;
-}
-?>
-
-<tr>
-    <td><?= htmlspecialchars($j["prenom"]." ".$j["nom"]) ?></td>
-    <td data-statut="<?= htmlspecialchars($j["statut"]) ?>">
-        <span class="badge <?= statutClass($j["statut"]) ?>">
-            <?= htmlspecialchars($j["statut"]) ?>
-        </span>
-    </td>
-    <td><?= htmlspecialchars($poste) ?></td>
-    <td><?= $roles["titu"] ?? 0 ?></td>
-    <td><?= $roles["remp"] ?? 0 ?></td>
-    <td><?= $moy ?? "—" ?></td>
-    <td><?= $pctWin ?></td>
-    <td><?= $consecutifs ?></td>
-</tr>
-
-<?php endforeach; ?>
+<?php if (empty($statsData)): ?>
+    <tr>
+        <td colspan="8">Aucun joueur trouvé.</td>
+    </tr>
+<?php else: ?>
+    <?php foreach ($statsData as $row): ?>
+    <tr>
+        <td><?= htmlspecialchars($row['nom']) ?></td>
+        <td>
+            <span class="badge <?= statutClass($row['statut']) ?>">
+                <?= htmlspecialchars($row['statut']) ?>
+            </span>
+        </td>
+        <td><?= htmlspecialchars($row['poste']) ?></td>
+        <td><?= $row['titu'] ?></td>
+        <td><?= $row['remp'] ?></td>
+        <td><?= $row['moy_disp'] ?></td>
+        <td><?= $row['pct_win_disp'] ?></td>
+        <td><?= $row['consecutifs'] ?></td>
+    </tr>
+    <?php endforeach; ?>
+<?php endif; ?>
 
 </tbody>
 </table>
-
-<script>
-/* ===== TRI TABLE ===== */
-document.querySelectorAll("th").forEach((th, i) => {
-    let asc = true;
-    th.addEventListener("click", () => {
-        const tbody = document.querySelector("tbody");
-        const rows = Array.from(tbody.querySelectorAll("tr"));
-        rows.sort((a, b) => {
-            let A = a.children[i].innerText.replace("%","").trim();
-            let B = b.children[i].innerText.replace("%","").trim();
-            let nA = parseFloat(A), nB = parseFloat(B);
-            if (!isNaN(nA) && !isNaN(nB)) return asc ? nA-nB : nB-nA;
-            return asc ? A.localeCompare(B) : B.localeCompare(A);
-        });
-        asc = !asc;
-        rows.forEach(r => tbody.appendChild(r));
-    });
-});
-
-/* ===== FILTRES ===== */
-const filtreStatut = document.getElementById("filtreStatut");
-const recherche = document.getElementById("recherche");
-
-function appliquerFiltres() {
-    document.querySelectorAll("tbody tr").forEach(tr => {
-        const nom = tr.children[0].innerText.toLowerCase();
-        const statut = tr.querySelector("[data-statut]").dataset.statut.toLowerCase();
-        const okStatut = !filtreStatut.value || statut === filtreStatut.value.toLowerCase();
-        const okNom = nom.includes(recherche.value.toLowerCase());
-        tr.style.display = (okStatut && okNom) ? "" : "none";
-    });
-}
-filtreStatut.addEventListener("change", appliquerFiltres);
-recherche.addEventListener("keyup", appliquerFiltres);
-</script>
 
 <?php include __DIR__ . "/../includes/footer.php"; ?>

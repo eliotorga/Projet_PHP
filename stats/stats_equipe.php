@@ -38,73 +38,91 @@ function calculerScoreImpact($joueur_id, $gestion_sportive) {
     $score = 0;
     $facteurs = [];
     
-    // 1. Moyenne des évaluations (30%)
+    // 1. Performance globale (25%)
     $stmt = $gestion_sportive->prepare("
-        SELECT AVG(evaluation) as moyenne, COUNT(*) as nb_matchs
+        SELECT 
+            AVG(evaluation) as moyenne,
+            COUNT(*) as nb_matchs,
+            STDDEV(evaluation) as ecart_type
         FROM participation
-        WHERE id_joueur = ? AND evaluation IS NOT NULL
+        WHERE id_joueur = ? 
+        AND evaluation IS NOT NULL
+        AND evaluation > 0
     ");
     $stmt->execute([$joueur_id]);
     $eval = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($eval['moyenne'] && $eval['nb_matchs'] > 0) {
-        $note_score = ($eval['moyenne'] / 6) * 30;
+        // Poids de la note basé sur le nombre de matchs (plus de matchs = plus fiable)
+        $poids_matchs = min(1, $eval['nb_matchs'] / 10);
+        $note_score = ($eval['moyenne'] / 6) * 25 * $poids_matchs;
         $score += $note_score;
-        $facteurs['evaluation'] = round($note_score, 1);
+        $facteurs['performance'] = round($note_score, 1);
+        
+        // Pénalité pour l'inconstance (écart-type élevé)
+        if ($eval['ecart_type'] > 1.0) {
+            $penalite = min(5, ($eval['ecart_type'] - 1.0) * 5);
+            $score -= $penalite;
+            $facteurs['penalite_inconstance'] = round(-$penalite, 1);
+        }
     }
     
-    // 2. Pourcentage de victoires (30%)
+    // 2. Forme récente (25%) - Derniers 5 matchs
+    $stmt = $gestion_sportive->prepare("
+        SELECT AVG(p.evaluation) as moyenne_recente
+        FROM participation p
+        JOIN matchs m ON m.id_match = p.id_match
+        WHERE p.id_joueur = ? 
+        AND p.evaluation IS NOT NULL
+        AND m.etat = 'JOUE'
+        ORDER BY m.date_heure DESC
+        LIMIT 5
+    ");
+    $stmt->execute([$joueur_id]);
+    $forme_recente = $stmt->fetchColumn();
+    
+    if ($forme_recente) {
+        $forme_score = ($forme_recente / 6) * 25;
+        $score += $forme_score;
+        $facteurs['forme_recente'] = round($forme_score, 1);
+    }
+    
+    // 3. Impact sur le résultat (20%)
     $stmt = $gestion_sportive->prepare("
         SELECT 
             COUNT(DISTINCT m.id_match) as total,
-            SUM(CASE WHEN m.resultat = 'VICTOIRE' THEN 1 ELSE 0 END) as victoires
+            SUM(CASE 
+                WHEN m.resultat = 'VICTOIRE' AND p.evaluation >= 4 THEN 1 
+                WHEN m.resultat = 'NUL' AND p.evaluation >= 3.5 THEN 1
+                WHEN m.resultat = 'DEFAITE' AND p.evaluation <= 2.5 THEN 0
+                ELSE 0.5 
+            END) as impact_positif
         FROM participation p
         JOIN matchs m ON m.id_match = p.id_match
-        WHERE p.id_joueur = ? AND m.etat = 'JOUE'
+        WHERE p.id_joueur = ? 
+        AND m.etat = 'JOUE'
+        AND p.evaluation IS NOT NULL
     ");
     $stmt->execute([$joueur_id]);
-    $victoires = $stmt->fetch(PDO::FETCH_ASSOC);
+    $impact_data = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if ($victoires['total'] > 0) {
-        $pct_victoire = ($victoires['victoires'] / $victoires['total']) * 100;
-        $victoire_score = ($pct_victoire / 100) * 30;
-        $score += $victoire_score;
-        $facteurs['victoires'] = round($victoire_score, 1);
+    if ($impact_data['total'] > 0) {
+        $impact_score = ($impact_data['impact_positif'] / $impact_data['total']) * 20;
+        $score += $impact_score;
+        $facteurs['impact'] = round($impact_score, 1);
     }
     
-    // 3. Régularité (consécutifs) (20%)
-    $stmt = $gestion_sportive->prepare("
-        SELECT COUNT(*) as consecutifs
-        FROM (
-            SELECT m.id_match
-            FROM matchs m
-            WHERE m.etat = 'JOUE'
-            ORDER BY m.date_heure DESC
-        ) as matchs_recents
-        WHERE EXISTS (
-            SELECT 1 FROM participation p 
-            WHERE p.id_match = matchs_recents.id_match 
-            AND p.id_joueur = ?
-        )
-    ");
-    $stmt->execute([$joueur_id]);
-    $consecutifs = $stmt->fetchColumn();
-    
-    if ($consecutifs > 0) {
-        $consecutif_score = min($consecutifs * 2, 20);
-        $score += $consecutif_score;
-        $facteurs['consecutifs'] = round($consecutif_score, 1);
-    }
-    
-    // 4. Performance par poste (10%)
+    // 4. Performance par poste (15%)
     $stmt = $gestion_sportive->prepare("
         SELECT 
             po.libelle as poste,
             AVG(p.evaluation) as moyenne_poste,
-            COUNT(*) as nb_matchs_poste
+            COUNT(*) as nb_matchs_poste,
+            (SELECT AVG(evaluation) FROM participation WHERE id_poste = p.id_poste) as moyenne_generale_poste
         FROM participation p
         JOIN poste po ON po.id_poste = p.id_poste
-        WHERE p.id_joueur = ? AND p.evaluation IS NOT NULL
+        WHERE p.id_joueur = ? 
+        AND p.evaluation IS NOT NULL
         GROUP BY p.id_poste, po.libelle
         ORDER BY AVG(p.evaluation) DESC
         LIMIT 1
@@ -113,22 +131,38 @@ function calculerScoreImpact($joueur_id, $gestion_sportive) {
     $poste_data = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($poste_data && $poste_data['moyenne_poste'] > 0) {
-        $poste_score = ($poste_data['moyenne_poste'] / 6) * 10;
+        // Bonus si le joueur est au-dessus de la moyenne à son poste
+        $bonus_poste = $poste_data['moyenne_poste'] > $poste_data['moyenne_generale_poste'] ? 2 : 0;
+        $poste_score = (($poste_data['moyenne_poste'] / 6) * 13) + $bonus_poste;
         $score += $poste_score;
         $facteurs['poste'] = round($poste_score, 1);
     }
     
-    // 5. Expérience (nombre de matchs) (10%)
+    // 5. Expérience et régularité (15%)
     $stmt = $gestion_sportive->prepare("
-        SELECT COUNT(*) as total_matchs
-        FROM participation
-        WHERE id_joueur = ?
+        SELECT 
+            COUNT(*) as total_matchs,
+            DATEDIFF(NOW(), MIN(m.date_heure)) as jours_premier_match,
+            COUNT(DISTINCT DATE_FORMAT(m.date_heure, '%Y-%m')) as mois_actifs
+        FROM participation p
+        JOIN matchs m ON m.id_match = p.id_match
+        WHERE p.id_joueur = ?
     ");
     $stmt->execute([$joueur_id]);
-    $total_matchs = $stmt->fetchColumn();
+    $experience_data = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if ($total_matchs > 0) {
-        $experience_score = min($total_matchs, 10);
+    if ($experience_data['total_matchs'] > 0) {
+        // Score d'expérience basé sur le nombre de matchs (max 7.5 points)
+        $exp_matchs = min(7.5, $experience_data['total_matchs'] * 0.5);
+        
+        // Score de régularité basé sur la fréquence de jeu (max 7.5 points)
+        $mois_actifs = $experience_data['mois_actifs'];
+        $mois_total = $experience_data['jours_premier_match'] > 0 ? 
+            min(24, ceil($experience_data['jours_premier_match'] / 30)) : 1;
+        $regularite = $mois_actifs / $mois_total;
+        $regularite_score = $regularite * 7.5;
+        
+        $experience_score = $exp_matchs + $regularite_score;
         $score += $experience_score;
         $facteurs['experience'] = round($experience_score, 1);
     }
