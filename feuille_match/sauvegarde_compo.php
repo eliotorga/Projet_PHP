@@ -38,9 +38,10 @@ if ($nb_eval > 0) {
 $nbJoueurs = 0;
 $hasGK = false;
 $assignedPlayers = []; // Pour éviter les doublons
+$titulaires_to_save = []; // Pour stocker les titulaires traités avec les bons postes
 
 // Validation des titulaires
-foreach ($titulaires as $poste => $id_joueur) {
+foreach ($titulaires as $poste_key => $id_joueur) {
     if (!empty($id_joueur)) {
         if (in_array($id_joueur, $assignedPlayers)) {
             $_SESSION['composition_draft'][$id_match] = [
@@ -53,13 +54,44 @@ foreach ($titulaires as $poste => $id_joueur) {
         }
         $assignedPlayers[] = $id_joueur;
         $nbJoueurs++;
-        $poste_id = $poste;
-        if (is_string($poste) && strpos($poste, '_') !== false) {
-            $poste_id = explode('_', $poste, 2)[0];
+        
+        // Extraire le nom du poste depuis la clé (format: "Gardien_0", "Défenseur central gauche_1", etc.)
+        $poste_libelle = $poste_key;
+        if (is_string($poste_key) && strpos($poste_key, '_') !== false) {
+            $poste_libelle = explode('_', $poste_key, 2)[0];
         }
-        if ((int)$poste_id === 1) {
+        
+        // Vérifier si c'est un gardien
+        if (stripos($poste_libelle, 'Gardien') !== false) {
             $hasGK = true;
         }
+        
+        // Récupérer l'ID du poste depuis la base de données
+        $stmt = $gestion_sportive->prepare("SELECT id_poste FROM poste WHERE libelle LIKE ? LIMIT 1");
+        $stmt->execute(["%" . $poste_libelle . "%"]);
+        $poste_id = $stmt->fetchColumn();
+        
+        if (!$poste_id) {
+            // Si le poste n'existe pas, utiliser une valeur par défaut selon le type
+            if (stripos($poste_libelle, 'Gardien') !== false) {
+                $poste_id = 1;
+            } elseif (stripos($poste_libelle, 'Défenseur') !== false) {
+                $poste_id = 2;
+            } elseif (stripos($poste_libelle, 'Milieu') !== false) {
+                $poste_id = 3;
+            } elseif (stripos($poste_libelle, 'Attaquant') !== false) {
+                $poste_id = 4;
+            } else {
+                $poste_id = 2; // Défaut : défenseur
+            }
+        }
+        
+        // Stocker pour la sauvegarde
+        $titulaires_to_save[] = [
+            'id_joueur' => $id_joueur,
+            'id_poste' => $poste_id,
+            'poste_libelle' => $poste_libelle
+        ];
     }
 }
 
@@ -102,25 +134,14 @@ if (!$hasGK) {
 clearParticipation($gestion_sportive, $id_match);
 
 // Enregistrement des titulaires
-foreach ($titulaires as $poste => $id_joueur) {
-    if (!empty($id_joueur)) {
-        // Il faut trouver l'ID du poste à partir du libellé si possible, 
-        // ou passer null si la fonction le permet. 
-        // addParticipation attend un tableau.
-        
-        // Récupération de l'ID poste depuis la BDD si nécessaire
-        // Mais db_participation.php demande 'id_poste'.
-        // Dans le formulaire, on va envoyer l'ID du poste dans la clé du tableau : name="titulaire[id_poste]"
-        // Donc $poste SERA l'ID du poste.
-        
-        addParticipation($gestion_sportive, [
-            "id_match" => $id_match,
-            "id_joueur" => $id_joueur,
-            "id_poste" => intval($poste), // On suppose que la clé est l'ID
-            "role" => "TITULAIRE",
-            "evaluation" => null
-        ]);
-    }
+foreach ($titulaires_to_save as $titulaire) {
+    addParticipation($gestion_sportive, [
+        "id_match" => $id_match,
+        "id_joueur" => $titulaire['id_joueur'],
+        "id_poste" => $titulaire['id_poste'],
+        "role" => "TITULAIRE",
+        "evaluation" => null
+    ]);
 }
 
 // Enregistrement des remplaçants

@@ -200,6 +200,248 @@ body {
 }
 
 /* =============================
+   EXPLICATION SCORE D'IMPACT
+============================= */
+.impact-explanation-section {
+    margin: 0 0 35px 0;
+    background: white !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
+    overflow: hidden !important;
+}
+
+.impact-explanation-section .container {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    padding: 0;
+}
+
+section.impact-explanation-section h2.section-title {
+    padding: 22px 25px;
+    background: linear-gradient(90deg, var(--primary-dark), var(--primary));
+    color: white;
+    font-size: 1.35rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+}
+
+section.impact-explanation-section .explanation-container {
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+section.impact-explanation-section .intro-card,
+section.impact-explanation-section .example-card {
+    background: #f8fafc !important;
+    border: 1px solid #eef2f7 !important;
+    border-radius: 14px !important;
+    padding: 18px !important;
+}
+
+section.impact-explanation-section .intro-card h3,
+section.impact-explanation-section .factors-title,
+section.impact-explanation-section .interpretation-title,
+section.impact-explanation-section .calculation-example h3,
+section.impact-explanation-section .usage-tips h3 {
+    font-size: 1.05rem;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--dark);
+}
+
+.impact-explanation-section .intro-card p {
+    color: var(--gray);
+    line-height: 1.55;
+    margin-bottom: 12px;
+}
+
+.impact-explanation-section .score-range-info {
+    display: inline-block;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: #eef7ff;
+    color: #2b5f86;
+    font-size: 0.9rem;
+    border-left: 4px solid var(--info);
+}
+
+section.impact-explanation-section .factors-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+}
+
+section.impact-explanation-section .factor-card {
+    background: white !important;
+    border: 1px solid #eef2f7 !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    transition: var(--transition);
+}
+
+section.impact-explanation-section .factor-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(0,0,0,0.10);
+}
+
+section.impact-explanation-section .factor-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 14px;
+    border-left: 5px solid var(--info);
+    background: #fbfcfe;
+}
+
+section.impact-explanation-section .factor-header h4 {
+    font-size: 0.95rem;
+    flex: 1;
+    color: var(--dark);
+}
+
+section.impact-explanation-section .factor-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+section.impact-explanation-section .factor-weight {
+    color: white;
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 4px 10px;
+    border-radius: 999px;
+}
+
+section.impact-explanation-section .factor-body {
+    padding: 12px 14px 14px;
+    color: var(--gray);
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+section.impact-explanation-section .interpretation-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+section.impact-explanation-section .interpretation-card {
+    background: white !important;
+    border: 1px solid #eef2f7 !important;
+    border-radius: 14px !important;
+    padding: 14px !important;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+section.impact-explanation-section .score-range {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+section.impact-explanation-section .range-label {
+    font-weight: 800;
+    font-size: 0.95rem;
+}
+
+section.impact-explanation-section .range-icon {
+    font-size: 1.1rem;
+}
+
+section.impact-explanation-section .interpretation-content h4 {
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+section.impact-explanation-section .interpretation-content p {
+    margin: 0;
+    color: var(--gray);
+    font-size: 0.88rem;
+    line-height: 1.4;
+}
+
+section.impact-explanation-section .progress-bars-example {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+section.impact-explanation-section .progress-example {
+    display: grid;
+    grid-template-columns: 160px 1fr 60px;
+    gap: 12px;
+    align-items: center;
+}
+
+section.impact-explanation-section .progress-label {
+    font-size: 0.88rem;
+    color: var(--dark);
+    font-weight: 600;
+}
+
+section.impact-explanation-section .progress-bar {
+    height: 8px;
+    background: #e0e6ed;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+section.impact-explanation-section .progress-fill {
+    height: 100%;
+    border-radius: 999px;
+}
+
+section.impact-explanation-section .progress-value {
+    font-size: 0.88rem;
+    color: var(--gray);
+    text-align: right;
+    font-weight: 700;
+}
+
+section.impact-explanation-section .tips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+section.impact-explanation-section .tip {
+    background: #f8fafc !important;
+    border: 1px solid #eef2f7 !important;
+    border-radius: 14px !important;
+    padding: 14px !important;
+}
+
+section.impact-explanation-section .tip i {
+    color: var(--primary);
+    font-size: 1.2rem;
+}
+
+section.impact-explanation-section .tip h4 {
+    margin: 8px 0 6px;
+    font-size: 0.95rem;
+    color: var(--dark);
+}
+
+section.impact-explanation-section .tip p {
+    margin: 0;
+    color: var(--gray);
+    font-size: 0.88rem;
+    line-height: 1.4;
+}
+
+
+/* =============================
    TABLEAU DES STATS
 ============================= */
 .table-container {
@@ -465,6 +707,19 @@ body {
     
     .page-header h1 {
         font-size: 2rem;
+    }
+
+    .impact-explanation-section .explanation-container {
+        padding: 18px;
+    }
+
+    .impact-explanation-section .progress-example {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+
+    .impact-explanation-section .progress-value {
+        text-align: left;
     }
 }
 

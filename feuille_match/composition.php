@@ -39,6 +39,118 @@ if ($match['etat'] === 'JOUE' && $dateMatchObj <= $nowDt) {
 }
 
 /* =============================
+   VÉRIFIER SI LE MATCH EST DÉJÀ JOUÉ AVEC ÉVALUATIONS
+============================= */
+if ($match['etat'] === 'JOUE' && $dateMatchObj <= $nowDt && $has_evaluations) {
+    // Si le match est joué, dans le passé ET a des évaluations, on ne peut plus modifier
+    $is_played = true;
+    $message = "Ce match a déjà été joué avec évaluations et ne peut plus être modifié.";
+    
+    // Charger le header avec le CSS des erreurs
+    $pageTitle = "Match non modifiable";
+    $extraCSS = "<link rel='stylesheet' href='../assets/css/error_pages.css'>
+    <style>
+        .match-details {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid var(--primary);
+        }
+        .match-details h3 {
+            margin-top: 0;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .match-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--gray);
+        }
+        .info-item i {
+            color: var(--primary);
+            width: 20px;
+            text-align: center;
+        }
+        .score-display {
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            margin: 15px 0;
+            color: var(--dark);
+        }
+        .team-names {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .team {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .team-logo {
+            width: 30px;
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+        }
+    </style>";
+    
+    include "../includes/header.php";
+    ?>
+    
+    <div class="match-details">
+        <h3><i class="fas fa-exclamation-triangle"></i> Match non modifiable</h3>
+        <div class="match-info-grid">
+            <div class="info-item">
+                <i class="fas fa-futbol"></i>
+                <span><strong>Adversaire :</strong> <?= htmlspecialchars($match["adversaire"]) ?></span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-calendar-alt"></i>
+                <span><strong>Date :</strong> <?= date("d/m/Y", strtotime($match["date_heure"])) ?></span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-clock"></i>
+                <span><strong>Heure :</strong> <?= date("H:i", strtotime($match["date_heure"])) ?></span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <span><strong>Lieu :</strong> <?= htmlspecialchars($match["lieu"] == "DOMICILE" ? "Domicile" : "Extérieur") ?></span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-info-circle"></i>
+                <span><strong>État :</strong> <?= htmlspecialchars($match["etat"]) ?></span>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+            <p style="margin: 0; color: #856404;"><strong><?= $message ?></strong></p>
+            <p style="margin: 10px 0 0 0; color: #856404;">Vous pouvez consulter la composition en cliquant sur le bouton ci-dessous.</p>
+            <a href="voir_composition.php?id_match=<?= $id_match ?>" class="btn-action" style="display: inline-block; padding: 10px 20px; background: var(--primary); color: white; text-decoration: none; border-radius: 5px; margin-top: 10px;">
+                <i class="fas fa-eye"></i> Voir la composition
+            </a>
+        </div>
+    </div>
+    
+    <?php include "../includes/footer.php"; ?>
+    <?php exit();
+}
+
+/* =============================
    VÉRIFIER SI LE MATCH EST DÉJÀ PRÉPARÉ
 ============================= */
 if ($match['etat'] === 'JOUE' && $has_evaluations) {
@@ -424,12 +536,12 @@ include "../includes/header.php";
                                     <div class="position-slot" style="cursor: default; padding: 10px;">
                                         <div class="position-title"><?= htmlspecialchars($poste['poste_libelle']) ?></div>
                                         
-                                        <select name="titulaire[<?= $poste['poste_id'] ?>_<?= $slot_index ?>]" 
+                                        <select name="titulaire[<?= $poste['poste_libelle'] ?>_<?= $slot_index ?>]" 
                                                 class="search-input" 
                                                 style="width: 100%; padding: 8px; font-size: 0.9rem;">
                                             <option value="">-- Sélectionner --</option>
                                             <?php foreach ($joueurs as $j): 
-                                                $slot_key = $poste['poste_id'] . '_' . $slot_index;
+                                                $slot_key = $poste['poste_libelle'] . '_' . $slot_index;
                                                 $current_value = '';
                                                 if ($draft_titulaires !== null) {
                                                     $current_value = $draft_titulaires[$slot_key] ?? '';

@@ -215,6 +215,101 @@ $joueurs_statut = $gestion_sportive->query("
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 /* =======================
+   SECTION SCORE D'IMPACT
+======================= */
+
+// Données pour l'explication des facteurs
+$facteurs_explication = [
+    [
+        'nom' => 'Performance globale',
+        'poids' => '25%',
+        'description' => "Note moyenne pondérée par le nombre de matchs. Pénalité pour inconstance (écart-type élevé)",
+        'icon' => '📊',
+        'color' => '#3498db'
+    ],
+    [
+        'nom' => 'Forme récente',
+        'poids' => '25%',
+        'description' => 'Performance sur les 5 derniers matchs joués',
+        'icon' => '📈',
+        'color' => '#2ecc71'
+    ],
+    [
+        'nom' => 'Impact sur résultats',
+        'poids' => '20%',
+        'description' => 'Capacité à influencer positivement le résultat des matchs',
+        'icon' => '⚽',
+        'color' => '#e74c3c'
+    ],
+    [
+        'nom' => 'Performance par poste',
+        'poids' => '15%',
+        'description' => 'Adéquation avec le poste + bonus si au-dessus de la moyenne générale',
+        'icon' => '🎯',
+        'color' => '#f39c12'
+    ],
+    [
+        'nom' => 'Expérience & régularité',
+        'poids' => '15%',
+        'description' => 'Nombre de matchs + fréquence de jeu sur la période',
+        'icon' => '📅',
+        'color' => '#9b59b6'
+    ]
+];
+
+// Plages de score avec interprétations
+$interpretations_score = [
+    [
+        'min' => 90,
+        'max' => 100,
+        'label' => 'Exceptionnel',
+        'description' => 'Joueur clé, impact maximal',
+        'color' => '#27ae60',
+        'icon' => '🏆'
+    ],
+    [
+        'min' => 75,
+        'max' => 89,
+        'label' => 'Excellent',
+        'description' => 'Performance très élevée et régulière',
+        'color' => '#2ecc71',
+        'icon' => '⭐'
+    ],
+    [
+        'min' => 60,
+        'max' => 74,
+        'label' => 'Bon',
+        'description' => 'Contribution solide et fiable',
+        'color' => '#3498db',
+        'icon' => '✓'
+    ],
+    [
+        'min' => 45,
+        'max' => 59,
+        'label' => 'Moyen',
+        'description' => 'Performance acceptable avec marges de progression',
+        'color' => '#f1c40f',
+        'icon' => '↔️'
+    ],
+    [
+        'min' => 30,
+        'max' => 44,
+        'label' => 'À améliorer',
+        'description' => 'Impact limité, besoin de progression',
+        'color' => '#e67e22',
+        'icon' => '📉'
+    ],
+    [
+        'min' => 0,
+        'max' => 29,
+        'label' => 'Faible',
+        'description' => 'Impact insuffisant sur le collectif',
+        'color' => '#e74c3c',
+        'icon' => '⚠️'
+    ]
+];
+
+/* =======================
    TOP PERFORMERS AVEC SCORE D'IMPACT
 ======================= */
 $top_performers = $gestion_sportive->query("
