@@ -63,14 +63,15 @@ function getPlayedMatches(PDO $db) {
 
 // Ajouter un match
 function insertMatch(PDO $db, array $data) {
-    $sql = "INSERT INTO matchs (date_heure, adversaire, lieu, score_equipe, score_adverse, resultat, etat)
-            VALUES (:dh, :adv, :lieu, NULL, NULL, NULL, 'A_PREPARER')";
+    $sql = "INSERT INTO matchs (date_heure, adversaire, lieu, adresse, score_equipe, score_adverse, resultat, etat)
+            VALUES (:dh, :adv, :lieu, :adresse, NULL, NULL, NULL, 'A_PREPARER')";
 
     $stmt = $db->prepare($sql);
     $stmt->execute([
-        ":dh"   => $data["date_heure"],
-        ":adv"  => $data["adversaire"],
-        ":lieu" => $data["lieu"]
+        ":dh"      => $data["date_heure"],
+        ":adv"     => $data["adversaire"],
+        ":lieu"    => $data["lieu"],
+        ":adresse"  => $data["adresse"] ?? null
     ]);
 }
 

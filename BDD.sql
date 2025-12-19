@@ -102,6 +102,8 @@ CREATE TABLE participation (
     FOREIGN KEY (id_poste) REFERENCES poste(id_poste)
 );
 
+ALTER TABLE matchs ADD COLUMN adresse VARCHAR(255) NULL AFTER lieu;
+
 INSERT INTO participation
 SELECT
     m.id_match,

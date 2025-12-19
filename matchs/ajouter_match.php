@@ -13,7 +13,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $data = [
         "date_heure" => $_POST["date_heure"] ?? null,
         "adversaire" => trim($_POST["adversaire"] ?? ""),
-        "lieu"       => $_POST["lieu"] ?? ""
+        "lieu"       => $_POST["lieu"] ?? "",
+        "adresse"     => trim($_POST["adresse"] ?? "")
     ];
 
     // Validation avancée
@@ -51,6 +52,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // Validation lieu
     if (empty($data["lieu"]) || !in_array($data["lieu"], ['DOMICILE', 'EXTERIEUR'])) {
         $errors[] = "Veuillez sélectionner un lieu valide";
+    }
+    
+    // Validation adresse (uniquement pour les matchs à l'extérieur)
+    if ($data["lieu"] === 'EXTERIEUR' && empty($data["adresse"])) {
+        $errors[] = "L'adresse est obligatoire pour les matchs à l'extérieur";
+    } elseif (!empty($data["adresse"]) && strlen($data["adresse"]) > 255) {
+        $errors[] = "L'adresse ne peut pas dépasser 255 caractères";
     }
     
     // Vérifier les conflits de dates
@@ -212,6 +220,30 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         
                         <div class="validation-feedback" id="lieu-feedback"></div>
                     </div>
+
+                    <!-- ADRESSE (uniquement pour les matchs à l'extérieur) -->
+                    <?php if (($_POST['lieu'] ?? '') == 'EXTERIEUR' || (!isset($_POST['lieu']) && isset($_GET['lieu']) && $_GET['lieu'] == 'EXTERIEUR') || (!isset($_POST['lieu']) && !isset($_GET['lieu']))): ?>
+                    <div class="form-group" id="adresse-group">
+                        <label class="form-label">
+                            <i class="fas fa-map-pin"></i> Adresse du Match <span class="required">*</span>
+                        </label>
+                        <div class="form-hint">
+                            <i class="fas fa-info-circle"></i> Adresse complète (uniquement pour les matchs à l'extérieur)
+                        </div>
+                        <div class="input-with-icon">
+                            <input type="text" 
+                                   name="adresse" 
+                                   class="form-input"
+                                   placeholder="Ex: Stade de France, 75016 Paris"
+                                   value="<?= htmlspecialchars($_POST['adresse'] ?? '') ?>"
+                                   maxlength="255"
+                                   required
+                                   id="adresse-input">
+                            <i class="fas fa-map-marker-alt input-icon"></i>
+                        </div>
+                        <div class="validation-feedback" id="adresse-feedback"></div>
+                    </div>
+                    <?php endif; ?>
                 </div>
 
                 <!-- PRÉVISUALISATION -->
@@ -225,26 +257,58 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                             <div class="preview-label">
                                 <i class="fas fa-calendar-alt"></i> Date
                             </div>
-                            <div class="preview-value" id="preview-date">-</div>
+                            <div class="preview-value" id="preview-date">
+                                <?php 
+                                if (!empty($_POST['date_heure'])) {
+                                    $date = new DateTime($_POST['date_heure']);
+                                    echo $date->format('d F Y');
+                                } else {
+                                    echo '-';
+                                }
+                                ?>
+                            </div>
                         </div>
                         <div class="preview-item">
                             <div class="preview-label">
                                 <i class="fas fa-clock"></i> Heure
                             </div>
-                            <div class="preview-value" id="preview-time">-</div>
+                            <div class="preview-value" id="preview-time">
+                                <?php 
+                                if (!empty($_POST['date_heure'])) {
+                                    $date = new DateTime($_POST['date_heure']);
+                                    echo $date->format('H:i');
+                                } else {
+                                    echo '-';
+                                }
+                                ?>
+                            </div>
                         </div>
                         <div class="preview-item">
                             <div class="preview-label">
                                 <i class="fas fa-flag"></i> Adversaire
                             </div>
-                            <div class="preview-value" id="preview-adversaire">-</div>
+                            <div class="preview-value" id="preview-adversaire">
+                                <?= htmlspecialchars($_POST['adversaire'] ?? '-') ?>
+                            </div>
                         </div>
                         <div class="preview-item">
                             <div class="preview-label">
                                 <i class="fas fa-map-marker-alt"></i> Lieu
                             </div>
-                            <div class="preview-value" id="preview-lieu">-</div>
+                            <div class="preview-value" id="preview-lieu">
+                                <?= ($_POST['lieu'] ?? '') == 'DOMICILE' ? 'Domicile' : 'Extérieur' ?>
+                            </div>
                         </div>
+                        <?php if (($_POST['lieu'] ?? '') == 'EXTERIEUR'): ?>
+                        <div class="preview-item" id="preview-adresse-item">
+                            <div class="preview-label">
+                                <i class="fas fa-map-pin"></i> Adresse
+                            </div>
+                            <div class="preview-value" id="preview-adresse">
+                                <?= htmlspecialchars($_POST['adresse'] ?? '-') ?>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
