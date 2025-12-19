@@ -310,27 +310,29 @@ include "../includes/header.php";
                     
                     <!-- ACTIONS -->
                     <div class="match-actions">
-                        <?php if ($matchAVenir): ?>
+                        <?php if ($matchPasse && !$resultatSaisi): ?>
+                            <!-- Match passé sans score : modifier, voir compo et supprimer -->
+                            <a href="modifier_match.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-edit">
+                                <i class="fas fa-cog"></i> Modifier
+                            </a>
+                            <a href="../feuille_match/voir_composition.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-view">
+                                <i class="fas fa-eye"></i> Voir compo
+                            </a>
+                        <?php elseif ($matchAVenir): ?>
                             <a href="../feuille_match/composition.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-compose">
                                 <i class="fas fa-futbol"></i> Composer
                             </a>
                         <?php else: ?>
                             <?php if ($m['etat'] === 'A_PREPARER'): ?>
-                                <a href="../feuille_match/composition.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-compose">
-                                    <i class="fas fa-futbol"></i> Composer
-                                </a>
+                                <!-- Match passé non préparé : pas de bouton composer -->
                             <?php elseif ($m['etat'] === 'JOUE'): ?>
-                                <?php if ((int)$m['nb_joueurs'] > 0): ?>
-                                    <a href="../feuille_match/voir_composition.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-view">
-                                        <i class="fas fa-eye"></i> Voir compo
-                                    </a>
+                                <a href="../feuille_match/voir_composition.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-view">
+                                    <i class="fas fa-eye"></i> Voir compo
+                                </a>
 
+                                <?php if ((int)$m['nb_joueurs'] > 0): ?>
                                     <a href="../feuille_match/evaluation.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-eval">
                                         <i class="fas fa-star"></i> Évaluer
-                                    </a>
-                                <?php else: ?>
-                                    <a href="../feuille_match/composition.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-compose">
-                                        <i class="fas fa-futbol"></i> Composer
                                     </a>
                                 <?php endif; ?>
                             <?php else: ?>
@@ -342,15 +344,11 @@ include "../includes/header.php";
                                     <a href="../feuille_match/evaluation.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-eval">
                                         <i class="fas fa-star"></i> Évaluer
                                     </a>
-                                <?php else: ?>
-                                    <a href="../feuille_match/composition.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-compose">
-                                        <i class="fas fa-futbol"></i> Composer
-                                    </a>
                                 <?php endif; ?>
                             <?php endif; ?>
                         <?php endif; ?>
 
-                        <?php if ($matchAVenir || $m['etat'] !== 'JOUE'): ?>
+                        <?php if (($matchAVenir || $m['etat'] !== 'JOUE') && !($matchPasse && !$resultatSaisi)): ?>
                             <a href="modifier_match.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-edit">
                                 <i class="fas fa-cog"></i> Modifier
                             </a>
