@@ -80,6 +80,9 @@ function updateMatch(PDO $db, int $id, array $data) {
             SET date_heure = :dh,
                 adversaire = :adv,
                 lieu = :lieu,
+                score_equipe = :score_equipe,
+                score_adverse = :score_adverse,
+                resultat = :resultat,
                 etat = :etat
             WHERE id_match = :id";
 
@@ -88,6 +91,9 @@ function updateMatch(PDO $db, int $id, array $data) {
         ":dh"   => $data["date_heure"],
         ":adv"  => $data["adversaire"],
         ":lieu" => $data["lieu"],
+        ":score_equipe" => $data["score_equipe"],
+        ":score_adverse" => $data["score_adverse"],
+        ":resultat" => $data["resultat"],
         ":etat" => $data["etat"],
         ":id"   => $id
     ]);

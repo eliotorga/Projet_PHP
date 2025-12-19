@@ -7,6 +7,26 @@ $id_match = intval($_POST["id_match"] ?? 0);
 $titulaires = $_POST["titulaire"] ?? [];
 $remplacants = $_POST["remplacants"] ?? [];
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$stmt = $gestion_sportive->prepare("SELECT etat FROM matchs WHERE id_match = ?");
+$stmt->execute([$id_match]);
+$etat_match = $stmt->fetchColumn();
+
+if (!$etat_match) {
+    die("<div class='error-message'>Erreur : Match introuvable.<br><a href='../matchs/liste_matchs.php'>Retour</a></div>");
+}
+
+$stmt = $gestion_sportive->prepare("SELECT COUNT(*) FROM participation WHERE id_match = ? AND evaluation IS NOT NULL");
+$stmt->execute([$id_match]);
+$nb_eval = (int)$stmt->fetchColumn();
+
+if ($nb_eval > 0) {
+    die("<div class='error-message'>Erreur : Des évaluations existent déjà pour ce match, la composition ne peut plus être modifiée.<br><a href='../matchs/liste_matchs.php'>Retour</a></div>");
+}
+
 /* ================= VALIDATION SERVEUR ================= */
 $nbJoueurs = 0;
 $hasGK = false;
@@ -16,12 +36,21 @@ $assignedPlayers = []; // Pour éviter les doublons
 foreach ($titulaires as $poste => $id_joueur) {
     if (!empty($id_joueur)) {
         if (in_array($id_joueur, $assignedPlayers)) {
-            die("<div class='error-message'>Erreur : Le joueur (ID: $id_joueur) est assigné à plusieurs postes.<br><a href='composition.php?id_match=$id_match'>Retour</a></div>");
+            $_SESSION['composition_draft'][$id_match] = [
+                'error' => "Erreur : un joueur est assigné à plusieurs postes.",
+                'titulaires' => $titulaires,
+                'remplacants' => $remplacants
+            ];
+            header("Location: composition.php?id_match=$id_match");
+            exit;
         }
         $assignedPlayers[] = $id_joueur;
         $nbJoueurs++;
-        // ID 1 est le Gardien (supposition basée sur composition.php)
-        if ($poste == 1) {
+        $poste_id = $poste;
+        if (is_string($poste) && strpos($poste, '_') !== false) {
+            $poste_id = explode('_', $poste, 2)[0];
+        }
+        if ((int)$poste_id === 1) {
             $hasGK = true;
         }
     }
@@ -42,68 +71,22 @@ foreach ($remplacants as $id_joueur) {
 // mais ici on garde la logique précédente si elle existait.
 // Le code précédent vérifiait $nbJoueurs < 11.
 if ($nbJoueurs < 11) {
-    ?>
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Composition enregistrée</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="../assets/css/feuille_match.css">
-        <link rel="stylesheet" href="../assets/css/resultats.css">
-    </head>
-    <body>
-        <div class="confirmation-container">
-            <h1><i class="fas fa-exclamation-circle error-icon"></i> Composition invalide !</h1>
-            
-            <p class="confirmation-message">
-                La composition du match nécessite au moins 11 joueurs titulaires (et un gardien).
-            </p>
-            
-            <div class="confirmation-actions">
-                <a href="composition.php?id_match=<?= $id_match ?>" class="btn btn-primary">
-                    <i class="fas fa-arrow-left"></i> Retour à la composition
-                </a>
-            </div>
-        </div>
-    </body>
-    </html>
-    <?php
+    $_SESSION['composition_draft'][$id_match] = [
+        'error' => "La composition du match nécessite au moins 11 joueurs titulaires.",
+        'titulaires' => $titulaires,
+        'remplacants' => $remplacants
+    ];
+    header("Location: composition.php?id_match=$id_match");
     exit;
 }
 
 if (!$hasGK) {
-    ?>
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Composition enregistrée</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="../assets/css/feuille_match.css">
-        <link rel="stylesheet" href="../assets/css/resultats.css">
-    </head>
-    <body>
-        <div class="confirmation-container">
-            <h1><i class="fas fa-exclamation-circle error-icon"></i> Composition invalide !</h1>
-            
-            <p class="confirmation-message">
-                La composition du match nécessite un gardien.
-            </p>
-            
-            <div class="confirmation-actions">
-                <a href="composition.php?id_match=<?= $id_match ?>" class="btn btn-primary">
-                    <i class="fas fa-arrow-left"></i> Retour à la composition
-                </a>
-            </div>
-        </div>
-    </body>
-    </html>
-    <?php
+    $_SESSION['composition_draft'][$id_match] = [
+        'error' => "La composition du match nécessite un gardien.",
+        'titulaires' => $titulaires,
+        'remplacants' => $remplacants
+    ];
+    header("Location: composition.php?id_match=$id_match");
     exit;
 }
 
@@ -134,19 +117,31 @@ foreach ($titulaires as $poste => $id_joueur) {
 }
 
 // Enregistrement des remplaçants
+$stmt = $gestion_sportive->prepare("SELECT id_poste FROM poste WHERE code = 'REM' LIMIT 1");
+$stmt->execute();
+$remplacant_poste_id = (int)$stmt->fetchColumn();
+if ($remplacant_poste_id <= 0) {
+    $stmt = $gestion_sportive->prepare("INSERT INTO poste (code, libelle) VALUES ('REM', 'Remplaçant')");
+    $stmt->execute();
+    $stmt = $gestion_sportive->prepare("SELECT id_poste FROM poste WHERE code = 'REM' LIMIT 1");
+    $stmt->execute();
+    $remplacant_poste_id = (int)$stmt->fetchColumn();
+}
 foreach ($remplacantsClean as $id_joueur) {
     addParticipation($gestion_sportive, [
         "id_match" => $id_match,
         "id_joueur" => $id_joueur,
-        "id_poste" => null, // Pas de poste spécifique pour un remplaçant
+        "id_poste" => $remplacant_poste_id,
         "role" => "REMPLACANT",
         "evaluation" => null
     ]);
 }
 
 // Mise à jour de l'état du match
-$stmt = $gestion_sportive->prepare("UPDATE matchs SET etat = 'PREPARE' WHERE id_match = ?");
-$stmt->execute([$id_match]);
+if ($etat_match !== 'JOUE') {
+    $stmt = $gestion_sportive->prepare("UPDATE matchs SET etat = 'PREPARE' WHERE id_match = ?");
+    $stmt->execute([$id_match]);
+}
 
 header("Location: ../matchs/liste_matchs.php");
 exit;

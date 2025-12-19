@@ -27,11 +27,15 @@ if (!$match) {
     die("<div class='error-container'><h2>⚽ Match introuvable</h2><p>Le match sélectionné n'existe pas.</p></div>");
 }
 
+$stmt = $gestion_sportive->prepare("SELECT 1 FROM participation WHERE id_match = ? AND evaluation IS NOT NULL LIMIT 1");
+$stmt->execute([$id_match]);
+$has_evaluations = (bool)$stmt->fetchColumn();
+
 /* =============================
    VÉRIFIER SI LE MATCH EST DÉJÀ PRÉPARÉ
 ============================= */
-if ($match['etat'] !== 'A_PREPARER') {
-    $is_played = $match['etat'] === 'TERMINE';
+if ($match['etat'] === 'JOUE' && $has_evaluations) {
+    $is_played = true;
     $message = $is_played ? 
         "Ce match a déjà été joué et ne peut plus être modifié." : 
         "La composition de ce match a déjà été enregistrée.";
@@ -213,15 +217,29 @@ $postes = $gestion_sportive->query("
    VÉRIFIER LES PARTICIPATIONS EXISTANTES
 ============================= */
 $stmt = $gestion_sportive->prepare("
-    SELECT p.id_joueur, p.role, po.libelle AS poste
+    SELECT p.id_joueur, p.id_poste, p.role, po.libelle AS poste
     FROM participation p
-    JOIN poste po ON po.id_poste = p.id_poste
+    LEFT JOIN poste po ON po.id_poste = p.id_poste
     WHERE p.id_match = ?
 ");
 $stmt->execute([$id_match]);
 $participations_existantes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Préparer les données pour JavaScript
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$draft_error = null;
+$draft_titulaires = null;
+$draft_remplacants = null;
+if (isset($_SESSION['composition_draft'][$id_match])) {
+    $draft = $_SESSION['composition_draft'][$id_match];
+    $draft_error = $draft['error'] ?? null;
+    $draft_titulaires = $draft['titulaires'] ?? [];
+    $draft_remplacants = $draft['remplacants'] ?? [];
+    unset($_SESSION['composition_draft'][$id_match]);
+}
+
 $titulaires_existants = [];
 $remplacants_existants = [];
 foreach ($participations_existantes as $participation) {
@@ -231,6 +249,9 @@ foreach ($participations_existantes as $participation) {
         $remplacants_existants[] = $participation['id_joueur'];
     }
 }
+
+$titulaires_selected_ids = array_values(array_unique(array_filter($draft_titulaires !== null ? $draft_titulaires : $titulaires_existants, fn($v) => $v !== null && $v !== '')));
+$remplacants_selected_ids = array_values(array_unique(array_filter($draft_remplacants !== null ? $draft_remplacants : $remplacants_existants, fn($v) => $v !== null && $v !== '')));
 
 include "../includes/header.php";
 ?>
@@ -249,6 +270,11 @@ include "../includes/header.php";
 </head>
 <body>
     <div class="page-container">
+        <?php if (!empty($draft_error)): ?>
+            <div class="error-message">
+                <i class="fas fa-exclamation-triangle"></i> <?= htmlspecialchars($draft_error) ?>
+            </div>
+        <?php endif; ?>
         <!-- EN-TÊTE DU MATCH -->
         <div class="header-match">
             <h1><i class="fas fa-futbol"></i> Composition d'équipe</h1>
@@ -284,15 +310,15 @@ include "../includes/header.php";
             </div>
             <div class="stat-card">
                 <div class="stat-label">Titulaires</div>
-                <div class="stat-number" id="titulaires-count"><?= count($titulaires_existants) ?></div>
+                <div class="stat-number" id="titulaires-count"><?= count($titulaires_selected_ids) ?></div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Remplaçants</div>
-                <div class="stat-number" id="remplacants-count"><?= count($remplacants_existants) ?></div>
+                <div class="stat-number" id="remplacants-count"><?= count($remplacants_selected_ids) ?></div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Postes restants</div>
-                <div class="stat-number" id="postes-restants"><?= count($postes) - count($titulaires_existants) ?></div>
+                <div class="stat-number" id="postes-restants"><?= count($postes) - count($titulaires_selected_ids) ?></div>
             </div>
         </div>
 
@@ -308,15 +334,16 @@ include "../includes/header.php";
                     
                     <div class="players-list">
                         <?php foreach ($joueurs as $j): 
-                            $est_remplacant = in_array($j['id_joueur'], $remplacants_existants);
-                            $est_titulaire = in_array($j['id_joueur'], $titulaires_existants);
+                            $est_titulaire = in_array($j['id_joueur'], $titulaires_selected_ids);
+                            $est_remplacant = in_array($j['id_joueur'], $remplacants_selected_ids) && !$est_titulaire;
                         ?>
                             <label class="player-card player-select">
                                 <input type="checkbox" 
                                        class="player-checkbox"
                                        name="remplacants[]" 
                                        value="<?= $j['id_joueur'] ?>" 
-                                       <?= $est_remplacant ? 'checked' : '' ?>>
+                                       <?= $est_remplacant ? 'checked' : '' ?>
+                                       <?= $est_titulaire ? 'disabled' : '' ?>>
                                 
                                 <div class="player-avatar <?= $est_blesse ? 'injured' : ($est_suspendu ? 'suspended' : '') ?>">
                                 <?= strtoupper(substr($j['prenom'], 0, 1) . substr($j['nom'], 0, 1)) ?>
@@ -366,6 +393,8 @@ include "../includes/header.php";
                         ];
                         
                         $slot_index = 0;
+                        $prefill_used_players = [];
+                        $prefill_titulaires = array_values(array_filter($participations_existantes, fn($p) => ($p['role'] ?? null) === 'TITULAIRE'));
                         foreach ($lignes as $ligne): 
                         ?>
                             <div class="formation-line">
@@ -393,23 +422,24 @@ include "../includes/header.php";
                                                 style="width: 100%; padding: 8px; font-size: 0.9rem;">
                                             <option value="">-- Sélectionner --</option>
                                             <?php foreach ($joueurs as $j): 
-                                                // Vérif très basique pour pré-sélection (à améliorer si besoin)
-                                                // On vérifie si ce joueur est titulaire à ce poste ID
-                                                $selected = false;
-                                                foreach ($participations_existantes as $key => $p) {
-                                                    if ($p['id_joueur'] == $j['id_joueur'] && $p['role'] === 'TITULAIRE' && $p['id_poste'] == $poste['poste_id']) {
-                                                        // On "consomme" cette participation pour ne pas la réutiliser sur le prochain slot identique ?
-                                                        // Difficile sans état global.
-                                                        // Pour l'instant, on sélectionne si ça match, mais ça risque de dupliquer l'affichage.
-                                                        // Tant pis, l'utilisateur corrigera.
-                                                        $selected = true;
-                                                        // Hack : retirer de la liste pour ne pas le re-sélectionner au prochain tour de boucle ?
-                                                        // unset($participations_existantes[$key]); // Risqué si on refresh
-                                                        break;
+                                                $slot_key = $poste['poste_id'] . '_' . $slot_index;
+                                                $current_value = '';
+                                                if ($draft_titulaires !== null) {
+                                                    $current_value = $draft_titulaires[$slot_key] ?? '';
+                                                } else {
+                                                    foreach ($prefill_titulaires as $p) {
+                                                        if ((int)$p['id_poste'] === (int)$poste['poste_id'] && !in_array($p['id_joueur'], $prefill_used_players)) {
+                                                            $current_value = (string)$p['id_joueur'];
+                                                            $prefill_used_players[] = $p['id_joueur'];
+                                                            break;
+                                                        }
                                                     }
                                                 }
+
+                                                $selected = ((string)$j['id_joueur'] === (string)$current_value);
+                                                $disabled = ((string)$j['id_joueur'] !== (string)$current_value) && in_array($j['id_joueur'], $titulaires_selected_ids);
                                             ?>
-                                                <option value="<?= $j['id_joueur'] ?>" <?= $selected ? 'selected' : '' ?>>
+                                                <option value="<?= $j['id_joueur'] ?>" <?= $selected ? 'selected' : '' ?> <?= $disabled ? 'disabled' : '' ?>>
                                                     <?= htmlspecialchars($j['prenom'] . ' ' . $j['nom']) ?>
                                                 </option>
                                             <?php endforeach; ?>

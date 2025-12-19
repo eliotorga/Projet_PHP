@@ -76,20 +76,30 @@ $moyenne_calc = $nb_notes > 0 ? round($somme_notes / $nb_notes, 2) : 0;
 
 /* Enregistrement du formulaire */
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $resultat = $_POST["resultat"] ?? null;
     $score_equipe = !empty($_POST["score_equipe"]) ? (int)$_POST["score_equipe"] : null;
     $score_adverse = !empty($_POST["score_adverse"]) ? (int)$_POST["score_adverse"] : null;
     $evaluations = $_POST["evaluation"] ?? [];
 
     /* Validation */
     $errors = [];
-    if (!$resultat) {
-        $errors[] = "Le résultat du match est requis.";
+    if ($score_equipe === null || $score_adverse === null) {
+        $errors[] = "Les scores du match sont requis.";
     }
     
     if ($score_equipe !== null && $score_adverse !== null) {
         if ($score_equipe < 0 || $score_adverse < 0) {
             $errors[] = "Les scores ne peuvent pas être négatifs.";
+        }
+    }
+
+    $resultat = null;
+    if ($score_equipe !== null && $score_adverse !== null) {
+        if ($score_equipe > $score_adverse) {
+            $resultat = "VICTOIRE";
+        } elseif ($score_equipe < $score_adverse) {
+            $resultat = "DEFAITE";
+        } else {
+            $resultat = "NUL";
         }
     }
     
@@ -241,33 +251,22 @@ include "../includes/header.php";
                 <div class="score-inputs">
                     <div class="score-input">
                         <span>Notre équipe</span>
-                        <input type="number" name="score_equipe" min="0" 
+                        <input type="number" name="score_equipe" min="0" required
                                value="<?= htmlspecialchars($match['score_equipe'] ?? '') ?>"
                                placeholder="0">
                     </div>
                     <span class="score-separator">-</span>
                     <div class="score-input">
-                        <input type="number" name="score_adverse" min="0" 
+                        <input type="number" name="score_adverse" min="0" required
                                value="<?= htmlspecialchars($match['score_adverse'] ?? '') ?>"
                                placeholder="0">
                         <span><?= htmlspecialchars($match['adversaire']) ?></span>
                     </div>
                 </div>
 
-                <!-- Boutons de résultat -->
+                <!-- Résultat (calculé) -->
                 <div class="result-buttons">
-                    <label class="result-label">
-                        <input type="radio" name="resultat" value="VICTOIRE" <?= ($match['resultat'] ?? '') === 'VICTOIRE' ? 'checked' : '' ?> required>
-                        <span class="result-victory"><i class="fas fa-trophy"></i> Victoire</span>
-                    </label>
-                    <label class="result-label">
-                        <input type="radio" name="resultat" value="DEFAITE" <?= ($match['resultat'] ?? '') === 'DEFAITE' ? 'checked' : '' ?>>
-                        <span class="result-defeat"><i class="fas fa-times-circle"></i> Défaite</span>
-                    </label>
-                    <label class="result-label">
-                        <input type="radio" name="resultat" value="NUL" <?= ($match['resultat'] ?? '') === 'NUL' ? 'checked' : '' ?>>
-                        <span class="result-draw"><i class="fas fa-handshake"></i> Nul</span>
-                    </label>
+                    <input type="text" class="form-control" value="<?= htmlspecialchars($match['resultat'] ?? 'Calculé automatiquement à partir du score') ?>" readonly>
                 </div>
             </div>
 

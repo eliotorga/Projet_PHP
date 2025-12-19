@@ -313,13 +313,39 @@ include "../includes/header.php";
                                 <i class="fas fa-futbol"></i> Composer
                             </a>
                         <?php else: ?>
-                            <a href="../feuille_match/voir_composition.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-view">
-                                <i class="fas fa-eye"></i> Voir
-                            </a>
+                            <?php if ($m['etat'] === 'A_PREPARER'): ?>
+                                <a href="../feuille_match/composition.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-compose">
+                                    <i class="fas fa-futbol"></i> Composer
+                                </a>
+                            <?php elseif ($m['etat'] === 'JOUE'): ?>
+                                <?php if ((int)$m['nb_joueurs'] > 0): ?>
+                                    <a href="../feuille_match/composition.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-compose">
+                                        <i class="fas fa-pen"></i> Modifier compo
+                                    </a>
 
-                            <a href="../feuille_match/evaluation.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-eval">
-                                <i class="fas fa-star"></i> Évaluer
-                            </a>
+                                    <a href="../feuille_match/evaluation.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-eval">
+                                        <i class="fas fa-star"></i> Évaluer
+                                    </a>
+                                <?php else: ?>
+                                    <a href="../feuille_match/composition.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-compose">
+                                        <i class="fas fa-futbol"></i> Composer
+                                    </a>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <a href="../feuille_match/voir_composition.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-view">
+                                    <i class="fas fa-eye"></i> Voir
+                                </a>
+
+                                <?php if ((int)$m['nb_joueurs'] > 0): ?>
+                                    <a href="../feuille_match/evaluation.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-eval">
+                                        <i class="fas fa-star"></i> Évaluer
+                                    </a>
+                                <?php else: ?>
+                                    <a href="../feuille_match/composition.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-compose">
+                                        <i class="fas fa-futbol"></i> Composer
+                                    </a>
+                                <?php endif; ?>
+                            <?php endif; ?>
                         <?php endif; ?>
 
                         <a href="modifier_match.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-edit">

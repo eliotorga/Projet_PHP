@@ -681,12 +681,8 @@ include "../includes/header.php";
                             else $resultat_initial = "NUL";
                         }
                     ?>
-                    <select name="resultat" class="form-control">
-                        <option value="" <?= $resultat_initial === '' ? "selected" : "" ?>>—</option>
-                        <option value="VICTOIRE" <?= $resultat_initial === 'VICTOIRE' ? "selected" : "" ?>>Victoire</option>
-                        <option value="DEFAITE" <?= $resultat_initial === 'DEFAITE' ? "selected" : "" ?>>Défaite</option>
-                        <option value="NUL" <?= $resultat_initial === 'NUL' ? "selected" : "" ?>>Match nul</option>
-                    </select>
+                    <input type="text" class="form-control" value="<?= $resultat_initial !== '' ? htmlspecialchars($resultat_initial) : 'Calculé automatiquement à partir du score' ?>" readonly>
+                    <input type="hidden" name="resultat" value="">
                 </div>
                 
                 <!-- État du Match -->

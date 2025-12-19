@@ -27,7 +27,8 @@ INSERT INTO poste (code, libelle) VALUES
 ('GAR','Gardien'),
 ('DEF','Défenseur'),
 ('MIL','Milieu'),
-('ATT','Attaquant');
+('ATT','Attaquant'),
+('REM','Remplaçant');
 
 CREATE TABLE joueur (
     id_joueur INT AUTO_INCREMENT PRIMARY KEY,

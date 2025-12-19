@@ -18,9 +18,20 @@ $data = [
     "lieu"          => $_POST["lieu"],
     "score_equipe"  => $_POST["score_equipe"] !== "" ? intval($_POST["score_equipe"]) : null,
     "score_adverse" => $_POST["score_adverse"] !== "" ? intval($_POST["score_adverse"]) : null,
-    "resultat"      => $_POST["resultat"] !== "" ? $_POST["resultat"] : null,
+    "resultat"      => null,
     "etat"          => $_POST["etat"]
 ];
+
+if ($data["score_equipe"] !== null && $data["score_adverse"] !== null) {
+    $data["etat"] = "JOUE";
+    if ($data["score_equipe"] > $data["score_adverse"]) {
+        $data["resultat"] = "VICTOIRE";
+    } elseif ($data["score_equipe"] < $data["score_adverse"]) {
+        $data["resultat"] = "DEFAITE";
+    } else {
+        $data["resultat"] = "NUL";
+    }
+}
 
 // Mise à jour
 updateMatch($gestion_sportive, $id_match, $data);
