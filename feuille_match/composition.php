@@ -31,6 +31,13 @@ $stmt = $gestion_sportive->prepare("SELECT 1 FROM participation WHERE id_match =
 $stmt->execute([$id_match]);
 $has_evaluations = (bool)$stmt->fetchColumn();
 
+$nowDt = new DateTimeImmutable('now');
+$dateMatchObj = new DateTimeImmutable($match['date_heure']);
+if ($match['etat'] === 'JOUE' && $dateMatchObj <= $nowDt) {
+    header("Location: voir_composition.php?id_match=$id_match");
+    exit();
+}
+
 /* =============================
    VÉRIFIER SI LE MATCH EST DÉJÀ PRÉPARÉ
 ============================= */

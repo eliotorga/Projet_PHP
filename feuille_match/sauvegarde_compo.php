@@ -11,12 +11,19 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$stmt = $gestion_sportive->prepare("SELECT etat FROM matchs WHERE id_match = ?");
+$stmt = $gestion_sportive->prepare("SELECT etat, date_heure FROM matchs WHERE id_match = ?");
 $stmt->execute([$id_match]);
-$etat_match = $stmt->fetchColumn();
+$match = $stmt->fetch(PDO::FETCH_ASSOC);
+$etat_match = $match['etat'] ?? null;
 
 if (!$etat_match) {
     die("<div class='error-message'>Erreur : Match introuvable.<br><a href='../matchs/liste_matchs.php'>Retour</a></div>");
+}
+
+$nowDt = new DateTimeImmutable('now');
+$dateMatchObj = new DateTimeImmutable($match['date_heure']);
+if ($etat_match === 'JOUE' && $dateMatchObj <= $nowDt) {
+    die("<div class='error-message'>Erreur : Ce match est déjà joué, la composition ne peut plus être modifiée.<br><a href='voir_composition.php?id_match=$id_match'>Voir la composition</a></div>");
 }
 
 $stmt = $gestion_sportive->prepare("SELECT COUNT(*) FROM participation WHERE id_match = ? AND evaluation IS NOT NULL");

@@ -56,7 +56,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $data = [
         "nom"            => trim($_POST["nom"] ?? ""),
         "prenom"         => trim($_POST["prenom"] ?? ""),
-        "num_licence"    => trim($_POST["num_licence"] ?? ""),
+        "num_licence"    => strtoupper(trim($_POST["num_licence"] ?? "")),
         "date_naissance" => $_POST["date_naissance"] ?? null,
         "taille_cm"      => $_POST["taille_cm"] ? intval($_POST["taille_cm"]) : null,
         "poids_kg"       => $_POST["poids_kg"] ? floatval($_POST["poids_kg"]) : null,
@@ -70,9 +70,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if (empty($data["prenom"])) $errors[] = "Le prénom est requis.";
     if (empty($data["num_licence"])) $errors[] = "Le numéro de licence est requis.";
     if (empty($data["id_statut"])) $errors[] = "Le statut est requis.";
+
+    if (!empty($data["num_licence"]) && !preg_match('/^LIC[0-9]{3}$/', $data["num_licence"])) {
+        $errors[] = "Le numéro de licence doit respecter le format LIC001 (LIC suivi de 3 chiffres).";
+    }
     
     // Validation spécifique
-    if (!empty($data["num_licence"]) && $data["num_licence"] !== $joueur["num_licence"]) {
+    if (!empty($data["num_licence"]) && $data["num_licence"] !== strtoupper($joueur["num_licence"])) {
         // Vérifier si le numéro de licence existe déjà
         $stmt = $gestion_sportive->prepare("SELECT id_joueur FROM joueur WHERE num_licence = ? AND id_joueur != ?");
         $stmt->execute([$data["num_licence"], $id_joueur]);
@@ -196,9 +200,7 @@ include __DIR__ . "/../includes/header.php";
                                    class="form-control" 
                                    value="<?= htmlspecialchars($joueur['num_licence']) ?>" 
                                    required
-                                   maxlength="20"
-                                   pattern="LIC[0-9]{3}"
-                                   title="Format: LIC001 (LIC suivi de 3 chiffres)">
+                                   maxlength="20">
                             <div class="form-help">
                                 <i class="fas fa-info-circle"></i>
                                 Format: LIC001 (LIC suivi de 3 chiffres)

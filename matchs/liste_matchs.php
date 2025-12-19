@@ -188,8 +188,10 @@ include "../includes/header.php";
             <?php foreach ($matchs as $m): 
                 $dateMatchObj = new DateTimeImmutable($m["date_heure"]);
                 $matchAVenir = $dateMatchObj > $nowDt;
+                $matchPasse = $dateMatchObj <= $nowDt;
+                $resultatSaisi = ($m['resultat'] !== null && $m['score_equipe'] !== null && $m['score_adverse'] !== null);
                 $etatAffichage = $m['etat'];
-                if (!$matchAVenir && $etatAffichage === 'A_PREPARER') {
+                if ($matchPasse && !$resultatSaisi) {
                     $etatAffichage = 'EN_RETARD';
                 }
                 $etatLibelle = $etatAffichage === 'EN_RETARD' ? 'En retard' : str_replace("_", " ", $etatAffichage);
@@ -225,7 +227,7 @@ include "../includes/header.php";
                             </div>
                             
                             <div class="match-score">
-                                <?php if ($m['etat'] === 'JOUE'): ?>
+                                <?php if ($m['etat'] === 'JOUE' && $resultatSaisi): ?>
                                     <div class="score"><?= $score ?></div>
                                     <span class="match-status <?= $m['resultat'] ?>">
                                         <?= $m['resultat'] ?>
@@ -319,8 +321,8 @@ include "../includes/header.php";
                                 </a>
                             <?php elseif ($m['etat'] === 'JOUE'): ?>
                                 <?php if ((int)$m['nb_joueurs'] > 0): ?>
-                                    <a href="../feuille_match/composition.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-compose">
-                                        <i class="fas fa-pen"></i> Modifier compo
+                                    <a href="../feuille_match/voir_composition.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-view">
+                                        <i class="fas fa-eye"></i> Voir compo
                                     </a>
 
                                     <a href="../feuille_match/evaluation.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-eval">
@@ -348,9 +350,11 @@ include "../includes/header.php";
                             <?php endif; ?>
                         <?php endif; ?>
 
-                        <a href="modifier_match.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-edit">
-                            <i class="fas fa-cog"></i> Modifier
-                        </a>
+                        <?php if ($matchAVenir || $m['etat'] !== 'JOUE'): ?>
+                            <a href="modifier_match.php?id_match=<?= $m['id_match'] ?>" class="btn-action btn-edit">
+                                <i class="fas fa-cog"></i> Modifier
+                            </a>
+                        <?php endif; ?>
 
                         <a href="supprimer_match.php?id=<?= $m['id_match'] ?>" class="btn-action btn-delete">
                             <i class="fas fa-trash"></i> Supprimer
