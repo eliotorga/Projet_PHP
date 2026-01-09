@@ -2,7 +2,6 @@
 // version avancee des statistiques joueurs avec filtres et tri
 // affiche stats detaillees equipe et joueurs avec possibilite de filtrer et trier
 
-session_start();
 require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";
 include __DIR__ . "/../includes/header.php";

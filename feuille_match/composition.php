@@ -9,7 +9,7 @@ require_once "../includes/config.php";
    VÉRIFICATION MATCH
 ============================= */
 if (!isset($_GET["id_match"])) {
-    header("Location: matchs.php?error=no_match");
+    header("Location: ../matchs/liste_matchs.php?error=no_match");
     exit();
 }
 
@@ -153,169 +153,6 @@ if ($match['etat'] === 'JOUE' && $dateMatchObj <= $nowDt && $has_evaluations) {
     <?php exit();
 }
 
-/* =============================
-   VÉRIFIER SI LE MATCH EST DÉJÀ PRÉPARÉ
-============================= */
-if ($match['etat'] === 'JOUE' && $has_evaluations) {
-    $is_played = true;
-    $message = $is_played ? 
-        "Ce match a déjà été joué et ne peut plus être modifié." : 
-        "La composition de ce match a déjà été enregistrée.";
-    
-    // Charger le header avec le CSS des erreurs
-    $pageTitle = "Match non modifiable";
-    $extraCSS = "<link rel='stylesheet' href='../assets/css/error_pages.css'>
-    <style>
-        .match-details {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
-            border-left: 4px solid var(--primary);
-        }
-        .match-details h3 {
-            margin-top: 0;
-            color: var(--dark);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .match-info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-        .info-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--gray);
-        }
-        .info-item i {
-            color: var(--primary);
-            width: 20px;
-            text-align: center;
-        }
-        .score-display {
-            font-size: 2rem;
-            font-weight: bold;
-            text-align: center;
-            margin: 15px 0;
-            color: var(--dark);
-        }
-        .team-names {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .team {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .team-logo {
-            width: 30px;
-            height: 30px;
-            background: #e9ecef;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--primary);
-            font-weight: bold;
-        }
-        .vs {
-            font-weight: bold;
-            color: var(--gray);
-            padding: 0 20px;
-        }
-    </style>";
-    
-    include_once "../includes/header.php";
-    
-    // Formatage de la date et l'heure
-    $date_match = date('d/m/Y', strtotime($match['date_heure']));
-    $heure_match = date('H:i', strtotime($match['date_heure']));
-    
-    echo "
-    <div class='error-container'>
-        <div class='error-code'><i class='fas fa-" . ($is_played ? 'whistle' : 'clipboard-check') . "'></i></div>
-        <div class='error-content'>
-            <h2><i class='fas fa-" . ($is_played ? 'exclamation-triangle' : 'info-circle') . "'></i> " . 
-                ($is_played ? 'Match terminé' : 'Composition verrouillée') . "</h2>
-            
-            <div class='match-details'>
-                <h3><i class='fas fa-info-circle'></i> Détails du match</h3>
-                
-                <div class='team-names'>
-                    <div class='team'>
-                        <div class='team-logo'>N</div>
-                        <span>Notre équipe</span>
-                    </div>
-                    <span class='vs'>VS</span>
-                    <div class='team'>
-                        <div class='team-logo'>" . strtoupper(substr($match['adversaire'], 0, 1)) . "</div>
-                        <span>" . htmlspecialchars($match['adversaire']) . "</span>
-                    </div>
-                </div>
-                
-                " . ($is_played ? 
-                    "<div class='score-display'>" . 
-                        ($match['buts_pour'] ?? '0') . " - " . ($match['buts_contre'] ?? '0') . 
-                    "</div>" : '') . "
-                
-                <div class='match-info-grid'>
-                    <div class='info-item'>
-                        <i class='fas fa-calendar-alt'></i>
-                        <span>Date: $date_match</span>
-                    </div>
-                    <div class='info-item'>
-                        <i class='fas fa-clock'></i>
-                        <span>Heure: $heure_match</span>
-                    </div>
-                    <div class='info-item'>
-                        <i class='fas fa-map-marker-alt'></i>
-                        <span>" . ($match['lieu'] == 'DOMICILE' ? 'Domicile' : 'Extérieur') . "</span>
-                    </div>
-                    <div class='info-item'>
-                        <i class='fas fa-info-circle'></i>
-                        <span>État: " . ($is_played ? 'Terminé' : 'Composition validée') . "</span>
-                    </div>
-                </div>
-            </div>
-            
-            <p>$message " . ($is_played ? 
-                "<a href='../stats/statistiques_match.php?id=" . $match['id_match'] . "'>Voir les statistiques du match</a>" : 
-                "Pour toute modification, veuillez contacter l'administrateur.
-                <br><small class='text-muted'>Dernière modification: " . 
-                date('d/m/Y H:i', strtotime($match['date_modification'] ?? 'now')) . "</small>") . "</p>
-            
-            <div class='error-actions'>
-                " . ($is_played ? 
-                    "<a href='../stats/statistiques_match.php?id=" . $match['id_match'] . "' class='btn btn-primary'>
-                        <i class='fas fa-chart-bar'></i> Voir les statistiques
-                    </a>" : 
-                    "<a href='../matchs/matchs.php' class='btn btn-primary'>
-                        <i class='fas fa-arrow-left'></i> Retour aux matchs
-                    </a>") . "
-                
-                <a href='../dashboard.php' class='btn btn-secondary'>
-                    <i class='fas fa-home'></i> Tableau de bord
-                </a>
-                
-                " . ($is_played ? 
-                    "<a href='../matchs/feuille_de_match.php?id=" . $match['id_match'] . "' class='btn btn-secondary'>
-                        <i class='fas fa-file-alt'></i> Voir la feuille de match
-                    </a>" : '') . "
-            </div>
-        </div>
-    </div>
-    ";
-    include "../includes/footer.php";
-    exit();
-}
 
 /* =============================
    JOUEURS ACTIFS AVEC LEUR NUMÉRO DE LICENCE
@@ -455,18 +292,20 @@ include "../includes/header.php";
                     <p class="panel-description">Cochez les joueurs remplaçants. (Les titulaires sont prioritaires)</p>
                     
                     <div class="players-list">
-                        <?php foreach ($joueurs as $j): 
+                        <?php foreach ($joueurs as $j):
                             $est_titulaire = in_array($j['id_joueur'], $titulaires_selected_ids);
                             $est_remplacant = in_array($j['id_joueur'], $remplacants_selected_ids) && !$est_titulaire;
+                            $est_blesse = ($j['statut'] === 'BLE');
+                            $est_suspendu = ($j['statut'] === 'SUS');
                         ?>
                             <label class="player-card player-select">
-                                <input type="checkbox" 
+                                <input type="checkbox"
                                        class="player-checkbox"
-                                       name="remplacants[]" 
-                                       value="<?= $j['id_joueur'] ?>" 
+                                       name="remplacants[]"
+                                       value="<?= $j['id_joueur'] ?>"
                                        <?= $est_remplacant ? 'checked' : '' ?>
                                        <?= $est_titulaire ? 'disabled' : '' ?>>
-                                
+
                                 <div class="player-avatar <?= $est_blesse ? 'injured' : ($est_suspendu ? 'suspended' : '') ?>">
                                 <?= strtoupper(substr($j['prenom'], 0, 1) . substr($j['nom'], 0, 1)) ?>
                             </div>

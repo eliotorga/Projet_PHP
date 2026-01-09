@@ -2,7 +2,6 @@
 // permet de modifier les informations d'un match existant
 // affiche un formulaire avec les donnees actuelles et les statistiques du match
 
-session_start();
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
 require_once "../bdd/db_match.php";
