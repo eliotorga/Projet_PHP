@@ -34,30 +34,42 @@
             </div>
         <?php endif; ?>
 
+        <!-- Identifiants de test -->
+        <div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); padding: 15px; border-radius: 12px; margin-bottom: 20px; border-left: 4px solid #1976d2;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <i class="fas fa-info-circle" style="color: #1976d2;"></i>
+                <strong style="color: #1565c0;">Identifiants de test</strong>
+            </div>
+            <div style="font-size: 0.9rem; color: #0d47a1; line-height: 1.6;">
+                <div><strong>Identifiant :</strong> admin</div>
+                <div><strong>Mot de passe :</strong> admin</div>
+            </div>
+        </div>
+
         <form class="login-form" method="POST" action="">
             <div class="form-group">
                 <label for="login">Identifiant</label>
                 <div class="input-wrapper">
                     <i class="fas fa-user input-icon"></i>
-                    <input type="text" 
-                           id="login" 
-                           name="login" 
-                           class="form-control" 
-                           placeholder="Votre identifiant" 
-                           required 
+                    <input type="text"
+                           id="login"
+                           name="login"
+                           class="form-control"
+                           placeholder="Votre identifiant"
+                           required
                            autofocus>
                 </div>
             </div>
-            
+
             <div class="form-group">
                 <label for="password">Mot de passe</label>
                 <div class="input-wrapper">
                     <i class="fas fa-lock input-icon"></i>
-                    <input type="password" 
-                           id="password" 
-                           name="password" 
-                           class="form-control" 
-                           placeholder="Votre mot de passe" 
+                    <input type="password"
+                           id="password"
+                           name="password"
+                           class="form-control"
+                           placeholder="Votre mot de passe"
                            required>
                 </div>
             </div>

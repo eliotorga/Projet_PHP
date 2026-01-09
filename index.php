@@ -103,22 +103,6 @@ $dernierMatch = $gestion_sportive->query("
     LIMIT 1
 ")->fetch(PDO::FETCH_ASSOC);
 
-/* MEILLEURS JOUEURS */
-$meilleurs_joueurs = $gestion_sportive->query("
-    SELECT 
-        j.id_joueur,
-        j.nom,
-        j.prenom,
-        ROUND(AVG(p.evaluation), 1) as moyenne,
-        COUNT(p.id_match) as nb_matchs
-    FROM joueur j
-    JOIN participation p ON p.id_joueur = j.id_joueur
-    WHERE p.evaluation IS NOT NULL
-    GROUP BY j.id_joueur
-    ORDER BY moyenne DESC
-    LIMIT 5
-")->fetchAll(PDO::FETCH_ASSOC);
-
 include "includes/header.php";
 ?>
 
@@ -337,44 +321,6 @@ include "includes/header.php";
 
             <!-- COLONNE DROITE -->
             <div class="right-column">
-                <!-- MEILLEURS JOUEURS -->
-                <div class="players-card">
-                    <div class="players-header">
-                        <i class="fas fa-crown"></i>
-                        <h3>Top Performers</h3>
-                    </div>
-                    
-                    <div class="player-ranking">
-                        <?php if (!empty($meilleurs_joueurs)): ?>
-                            <?php foreach ($meilleurs_joueurs as $index => $joueur): ?>
-                                <div class="player-item">
-                                    <div class="player-rank"><?= $index + 1 ?></div>
-                                    <div class="player-info">
-                                        <div class="player-name"><?= htmlspecialchars($joueur['prenom'] . ' ' . $joueur['nom']) ?></div>
-                                        <div class="player-stats">
-                                            <span class="player-rating">
-                                                <i class="fas fa-star"></i> <?= $joueur['moyenne'] ?>
-                                            </span>
-                                            <span>
-                                                <i class="fas fa-gamepad"></i> <?= $joueur['nb_matchs'] ?> matchs
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <a href="joueurs/fiche_joueur.php?id=<?= $joueur['id_joueur'] ?>" 
-                                       style="color: var(--secondary);">
-                                        <i class="fas fa-arrow-right"></i>
-                                    </a>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <div style="text-align: center; padding: 30px 0; opacity: 0.6;">
-                                <i class="fas fa-user-slash" style="font-size: 3rem; margin-bottom: 15px;"></i>
-                                <div>Aucune donnée d'évaluation disponible</div>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-
                 <!-- ACTIVITÉS RÉCENTES -->
                 <div class="activities-card" style="margin-top: 30px;">
                     <div class="activities-header">
@@ -454,7 +400,7 @@ include "includes/header.php";
                 </div>
                 <div class="quick-title">Compositions</div>
                 <div class="quick-desc">Historique des compositions d'équipe</div>
-                <a href="feuille_match/historique_compositions.php" class="btn-quick">
+                <a href="feuille_match/historique_feuille.php" class="btn-quick">
                     <i class="fas fa-arrow-right"></i> Accéder
                 </a>
             </div>

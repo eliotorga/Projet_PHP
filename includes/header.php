@@ -6,10 +6,13 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Gestion d’équipe – Coach</title>
+    <title>Gestion d'équipe – Coach</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <!-- Fichiers CSS globaux -->
+    <link rel="stylesheet" href="/Projet_PHP/assets/css/global.css">
     <link rel="stylesheet" href="/Projet_PHP/assets/css/header.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
 <body>
