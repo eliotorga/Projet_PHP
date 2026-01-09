@@ -7,9 +7,7 @@ require_once __DIR__ . "/../includes/config.php";
 
 include __DIR__ . "/../includes/header.php";
 
-/* =========================
-   RÉCUPÉRATION DES JOUEURS
-========================= */
+
 $joueurs = $gestion_sportive->query("
     SELECT j.id_joueur, j.nom, j.prenom, s.libelle AS statut
     FROM joueur j
@@ -36,9 +34,6 @@ $joueurs = $gestion_sportive->query("
 <?php
 $id = $j["id_joueur"];
 
-/* =========================
-   TITULARISATIONS / REMPLACEMENTS
-========================= */
 $stmt = $gestion_sportive->prepare("
     SELECT
         SUM(role = 'TITULAIRE') AS titulaires,
@@ -49,9 +44,6 @@ $stmt = $gestion_sportive->prepare("
 $stmt->execute([$id]);
 $roles = $stmt->fetch(PDO::FETCH_ASSOC);
 
-/* =========================
-   MOYENNE DES ÉVALUATIONS
-========================= */
 $stmt = $gestion_sportive->prepare("
     SELECT ROUND(AVG(evaluation), 2)
     FROM participation
