@@ -1,4 +1,7 @@
 <?php
+// calcule et affiche le poste prefere de chaque joueur
+// basé sur la meilleure moyenne d'evaluation par poste
+
 require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";
 

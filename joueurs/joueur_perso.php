@@ -1,4 +1,7 @@
 <?php
+// affiche le profil detaille d'un joueur specifique
+// stats personnelles, historique des matchs et commentaires
+
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
 

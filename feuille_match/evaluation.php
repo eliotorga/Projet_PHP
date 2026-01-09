@@ -1,4 +1,7 @@
 <?php
+// permet d'evaluer les performances des joueurs apres un match
+// formulaire pour saisir le score final et noter chaque joueur de 1 a 5
+
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
 

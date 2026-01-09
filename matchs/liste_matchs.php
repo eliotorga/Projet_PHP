@@ -1,4 +1,7 @@
 <?php
+// affiche la liste complete de tous les matchs avec filtres
+// permet de naviguer vers les actions composer, evaluer, modifier et supprimer
+
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
 

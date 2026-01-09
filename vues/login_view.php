@@ -1,3 +1,6 @@
+<!-- vue pour la page de connexion avec formulaire d'authentification -->
+<!-- affiche un formulaire moderne avec champs login et mot de passe -->
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>

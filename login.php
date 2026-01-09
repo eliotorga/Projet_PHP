@@ -1,4 +1,7 @@
 <?php
+// page de connexion
+// verifie le login et mot de passe puis redirige vers le dashboard
+
 session_start();
 require_once __DIR__ . '/includes/config.php';
 

@@ -1,4 +1,7 @@
 <?php
+// page d'accueil du dashboard
+// affiche les stats principales, le prochain match et les meilleurs joueurs
+
 require_once "includes/auth_check.php";
 require_once "includes/config.php";
 

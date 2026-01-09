@@ -1,10 +1,7 @@
 <?php
-/**
- * ------------------------------------------------------------
- *  Fichier : db_participation.php (Version PRO adaptée SQL)
- *  Objectif : Gestion de la table participation + statistiques
- * ------------------------------------------------------------
- */
+// fonctions pour gerer les participations aux matchs
+// permet de sauvegarder qui a joue a quel poste (titulaire ou remplacant)
+// calcule les stats de participations, evaluations et series
 
 
 /**************************************************************

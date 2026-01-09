@@ -1,9 +1,7 @@
 <?php
-/***************************************************
- * CONFIGURATION GÉNÉRALE
- * Connexion PDO + Identifiants de l'entraîneur
- * Aucun mot de passe stocké en clair dans la BD
- ***************************************************/
+// fichier de configuration principale
+// contient la connexion a la base de donnees et les identifiants de connexion
+// ce fichier est inclus partout dans le projet
 
 
 /* ---------------------------

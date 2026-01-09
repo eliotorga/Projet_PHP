@@ -1,4 +1,7 @@
 <?php
+// permet de modifier les informations d'un joueur existant
+// affiche un formulaire avec les donnees actuelles et les statistiques du joueur
+
 require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";
 require_once __DIR__ . "/../bdd/db_joueur.php";

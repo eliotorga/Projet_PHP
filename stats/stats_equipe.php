@@ -1,4 +1,7 @@
 <?php
+// affiche les statistiques completes de l'equipe et des joueurs
+// calcule un score d'impact pour chaque joueur base sur plusieurs criteres
+
 session_start();
 require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";

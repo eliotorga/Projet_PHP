@@ -1,3 +1,6 @@
+<!-- vue pour afficher les statistiques detaillees de l'equipe et des joueurs -->
+<!-- tableau avec top performers, scores d'impact et possibilite de filtrer et trier -->
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>

@@ -1,5 +1,6 @@
 <?php
-// header.php
+// header du site avec le menu de navigation
+// inclus sur toutes les pages
 ?>
 <!DOCTYPE html>
 <html lang="fr">

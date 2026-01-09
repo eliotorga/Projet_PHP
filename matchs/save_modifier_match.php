@@ -1,4 +1,7 @@
 <?php
+// traite les donnees du formulaire de modification d'un match
+// met a jour la base de donnees et redirige vers la liste des matchs
+
 session_start();
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";

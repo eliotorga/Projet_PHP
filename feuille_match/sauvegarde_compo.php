@@ -1,4 +1,7 @@
 <?php
+// traite et enregistre la composition d'equipe selectionnee
+// valide les titulaires et remplacants puis met a jour la base de donnees
+
 require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";
 require_once __DIR__ . "/../bdd/db_participation.php";

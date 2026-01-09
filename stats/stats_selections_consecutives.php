@@ -1,4 +1,7 @@
 <?php
+// calcule le nombre de matchs consecutifs ou chaque joueur a participe
+// compte a partir du match le plus recent jusqu'a la premiere absence
+
 require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";
 

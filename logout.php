@@ -1,4 +1,7 @@
 <?php
+// page de deconnexion
+// detruit la session et redirige vers la page de login
+
 require_once __DIR__ . "/includes/config.php";
 
 // Détruire toutes les variables de session

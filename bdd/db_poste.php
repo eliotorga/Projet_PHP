@@ -1,7 +1,6 @@
 <?php
-/**
- * Fonctions liées à la table POSTE
- */
+// fonctions pour gerer les postes de football (gardien, defenseur, milieu, attaquant)
+// operations crud sur la table poste
 
 function getAllPostes(PDO $db) {
     $sql = "SELECT * FROM poste ORDER BY libelle";

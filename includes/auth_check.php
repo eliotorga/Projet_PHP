@@ -1,5 +1,7 @@
 <?php
-// IMPORTANT : AUCUN ESPACE / AUCUN HTML AVANT CE FICHIER
+// verification de l'authentification
+// redirige vers login si pas connecte ou si session expiree
+// ce fichier est inclus sur toutes les pages protegees
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();

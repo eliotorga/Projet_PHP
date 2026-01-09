@@ -1,4 +1,7 @@
 <?php
+// affiche la feuille de match complete avec les titulaires et remplacants
+// visualisation des evaluations et statistiques du match termine
+
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
 

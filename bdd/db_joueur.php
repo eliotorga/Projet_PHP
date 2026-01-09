@@ -1,8 +1,7 @@
 <?php
-/***************************************************
- * db_joueur.php
- * Fonctions SQL pour gérer les joueurs
- ***************************************************/
+// fonctions pour gerer les joueurs
+// permet d'ajouter, modifier, supprimer et recuperer les joueurs
+// calcule aussi les stats comme les participations et moyennes
 
 require_once __DIR__ . "/../includes/config.php";
 

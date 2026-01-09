@@ -1,4 +1,7 @@
 <?php
+// affiche les statistiques simples de tous les joueurs
+// tableau avec titularisations, remplacements et moyenne des evaluations
+
 require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";
 

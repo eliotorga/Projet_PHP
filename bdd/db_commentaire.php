@@ -1,14 +1,9 @@
 <?php
-/**
- * ------------------------------------------------------------
- *  db_commentaire.php — Fonctions liées aux commentaires joueurs
- * ------------------------------------------------------------
- */
+// fonctions pour gerer les commentaires et evaluations des joueurs
+// recupere les commentaires et notes donnes aux joueurs
 
-/**
- * Récupère tous les commentaires d’un joueur sous forme de texte simple
- * Retourne un tableau de chaînes
- */
+// recupere tous les commentaires d'un joueur sous forme de texte simple
+// retourne un tableau de chaines
 function getCommentairesForJoueur(PDO $db, int $id_joueur): array {
 
     $sql = "
@@ -27,10 +22,8 @@ function getCommentairesForJoueur(PDO $db, int $id_joueur): array {
 }
 
 
-/**
- * Récupère toutes les évaluations d'un joueur (table participation)
- * Retourne un tableau d'entiers
- */
+// recupere toutes les evaluations d'un joueur (table participation)
+// retourne un tableau d'entiers
 function getEvaluationsForJoueur(PDO $db, int $id_joueur): array {
 
     $sql = "

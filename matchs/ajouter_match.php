@@ -1,4 +1,7 @@
 <?php
+// permet de planifier un nouveau match dans le calendrier
+// formulaire avec validation de date, adversaire, lieu et adresse
+
 require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";
 require_once __DIR__ . "/../bdd/db_match.php";

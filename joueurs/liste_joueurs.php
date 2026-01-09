@@ -1,4 +1,7 @@
 <?php
+// affiche la liste complete de tous les joueurs avec leurs statistiques
+// permet de naviguer vers les actions voir, modifier et supprimer
+
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
 

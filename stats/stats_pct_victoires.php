@@ -1,4 +1,7 @@
 <?php
+// calcule le pourcentage de victoires pour chaque joueur
+// affiche matchs joues, matchs gagnes et pourcentage de reussite
+
 require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";
 

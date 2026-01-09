@@ -1,4 +1,7 @@
 <?php
+// formulaire pour composer l'equipe avant un match
+// selection des 11 titulaires par poste et des remplacants
+
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
 

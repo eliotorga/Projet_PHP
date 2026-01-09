@@ -1,4 +1,7 @@
 <?php
+// permet de supprimer un ou plusieurs joueurs de la base de donnees
+// affiche la liste des joueurs avec leurs stats et gere la confirmation avant suppression
+
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
 

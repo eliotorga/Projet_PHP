@@ -1,8 +1,7 @@
 <?php
-/***************************************************
- * db_match.php
- * Fonctions SQL pour la gestion des matchs
- ***************************************************/
+// fonctions pour gerer les matchs
+// permet d'ajouter, modifier, supprimer les matchs
+// gere aussi les resultats et calcule les stats d'equipe
 
 require_once __DIR__ . "/../includes/config.php";
 

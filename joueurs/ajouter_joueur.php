@@ -1,4 +1,7 @@
 <?php
+// formulaire pour ajouter un nouveau joueur dans la base de donnees
+// validation des champs nom, prenom, licence, date de naissance et statut
+
 require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";
 require_once __DIR__ . "/../bdd/db_joueur.php";

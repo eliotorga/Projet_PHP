@@ -1,4 +1,7 @@
 <?php
+// fichier de test de connexion a la base de donnees
+// affiche un message de succes ou d'erreur
+
 require_once __DIR__ . "/../includes/config.php";
 
 try {

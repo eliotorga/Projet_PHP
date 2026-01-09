@@ -1,4 +1,7 @@
 <?php
+// affiche l'historique de toutes les compositions de matchs passes
+// liste les joueurs avec leurs postes, roles et evaluations pour chaque match
+
 session_start();
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";

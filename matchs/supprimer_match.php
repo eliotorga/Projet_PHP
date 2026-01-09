@@ -1,4 +1,7 @@
 <?php
+// permet de supprimer un ou plusieurs matchs de la base de donnees
+// affiche la liste des matchs avec stats et gere la confirmation avant suppression
+
 require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";
 

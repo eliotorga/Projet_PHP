@@ -1,7 +1,6 @@
 <?php
-/**
- * Fonctions liées à la table STATUT
- */
+// fonctions pour gerer les statuts des joueurs (actif, blesse, suspendu)
+// operations crud sur la table statut
 
 function getAllStatuts(PDO $db) {
     $sql = "SELECT * FROM statut ORDER BY libelle";

@@ -1,4 +1,7 @@
 <?php
+// permet de saisir le score final d'un match termine
+// passe le match a l'etat joue et calcule automatiquement le resultat
+
 require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";
 require_once __DIR__ . "/../bdd/db_match.php";
