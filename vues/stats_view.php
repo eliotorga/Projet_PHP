@@ -1,13 +1,12 @@
 <?php require_once __DIR__ . "/../includes/auth_check.php"; ?>
 <!-- vue pour afficher les statistiques detaillees de l'equipe et des joueurs -->
-<!-- tableau avec top performers, scores d'impact et possibilite de filtrer et trier -->
 
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Statistiques de l'Équipe - Score d'Impact</title>
+    <title>Statistiques de l'Équipe</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     <!-- Lien vers votre fichier CSS -->
@@ -19,50 +18,6 @@
         <div class="page-header">
             <h1><i class="fas fa-bolt"></i> Tableau de Bord Statistiques</h1>
             <p>Analyses détaillées des performances de l'équipe et des joueurs</p>
-        </div>
-
-        <!-- TOP PERFORMERS -->
-        <div class="stats-grid">
-            <div class="top-players">
-                <div class="stat-header">
-                    <div class="stat-icon">
-                        <i class="fas fa-crown"></i>
-                    </div>
-                    <h2 class="stat-title">Top Performers & Score d'Impact</h2>
-                </div>
-                
-                <div class="player-ranking">
-                    <?php if (!empty($top_performers)): ?>
-                        <?php foreach ($top_performers as $index => $joueur): ?>
-                            <div class="player-item">
-                                <div class="player-rank"><?= $index + 1 ?></div>
-                                <div class="player-info">
-                                    <div class="player-name"><?= htmlspecialchars($joueur['prenom'] . ' ' . $joueur['nom']) ?></div>
-                                    <div class="player-stats">
-                                        <span class="player-rating">
-                                            <i class="fas fa-star"></i> <?= $joueur['moyenne'] ?>
-                                        </span>
-                                        <span>
-                                            <i class="fas fa-gamepad"></i> <?= $joueur['nb_matchs'] ?> matchs
-                                        </span>
-                                        <span class="player-impact">
-                                            <i class="fas fa-bolt"></i> <?= $joueur['pourcentage_impact'] ?>%
-                                        </span>
-                                    </div>
-                                </div>
-                                <span class="badge <?= statutClass($joueur['statut']) ?>">
-                                    <?= htmlspecialchars($joueur['statut']) ?>
-                                </span>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <div style="text-align: center; padding: 30px 0; opacity: 0.6;">
-                            <i class="fas fa-user-slash" style="font-size: 2rem; margin-bottom: 10px;"></i>
-                            <div>Aucune donnée de performance disponible</div>
-                        </div>
-                    <?php endif; ?>
-                </div>
-            </div>
         </div>
 
         <!-- TABLEAU DES STATISTIQUES -->
@@ -110,8 +65,6 @@
                         <label class="filter-label">Trier par</label>
                         <select name="tri" class="filter-select">
                             <option value="nom" <?= ($tri == 'nom') ? 'selected' : '' ?>>Nom A-Z</option>
-                            <option value="impact_desc" <?= ($tri == 'impact_desc') ? 'selected' : '' ?>>Score d'impact ▼</option>
-                            <option value="impact_asc" <?= ($tri == 'impact_asc') ? 'selected' : '' ?>>Score d'impact ▲</option>
                             <option value="moyenne_desc" <?= ($tri == 'moyenne_desc') ? 'selected' : '' ?>>Note décroissante</option>
                             <option value="victoires_desc" <?= ($tri == 'victoires_desc') ? 'selected' : '' ?>>% victoires</option>
                             <option value="matchs_desc" <?= ($tri == 'matchs_desc') ? 'selected' : '' ?>>Matchs joués</option>
@@ -139,17 +92,12 @@
                         <th>Poste préféré</th>
                         <th>Moy. notes</th>
                         <th>% victoires</th>
-                        <th>Score d'impact</th>
-                        <th>Facteurs</th>
                         <th>Forme</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (!empty($joueurs_filtres)): ?>
-                        <?php foreach ($joueurs_filtres as $j): 
-                            $impactClass = $j['pourcentage_impact'] >= 70 ? 'impact-high' : 
-                                         ($j['pourcentage_impact'] >= 40 ? 'impact-medium' : 'impact-low');
-                        ?>
+                        <?php foreach ($joueurs_filtres as $j): ?>
                         <tr>
                             <td>
                                 <div class="player-cell">
@@ -215,30 +163,6 @@
                             </td>
                             
                             <td>
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <div class="impact-indicator <?= $impactClass ?>">
-                                        <i class="fas fa-bolt"></i>
-                                        <?= $j['pourcentage_impact'] ?>%
-                                    </div>
-                                    <div style="font-size: 0.85rem; color: var(--gray);">
-                                        (<?= number_format($j['score_impact'], 1) ?>/100)
-                                    </div>
-                                </div>
-                            </td>
-                            
-                            <td>
-                                <div style="font-size: 0.75rem; color: var(--gray); line-height: 1.4;">
-                                    <?php if (isset($j['facteurs_impact']) && !empty($j['facteurs_impact'])): ?>
-                                        <?php foreach ($j['facteurs_impact'] as $facteur => $valeur): ?>
-                                            <div><?= ucfirst($facteur) ?>: <?= $valeur ?> pts</div>
-                                        <?php endforeach; ?>
-                                    <?php else: ?>
-                                        <div style="opacity: 0.6;">Données insuffisantes</div>
-                                    <?php endif; ?>
-                                </div>
-                            </td>
-                            
-                            <td>
                                 <div style="display: flex; align-items: center; gap: 8px;">
                                     <div style="font-weight: 700; font-size: 1.2rem; color: <?= 
                                         $j['selections_consecutives'] >= 3 ? 'var(--secondary)' : 
@@ -254,7 +178,7 @@
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="8">
+                            <td colspan="6">
                                 <div class="no-results">
                                     <i class="fas fa-search"></i>
                                     <h3>Aucun joueur trouvé</h3>
