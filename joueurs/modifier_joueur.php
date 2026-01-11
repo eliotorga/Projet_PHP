@@ -37,6 +37,19 @@ $stmt = $gestion_sportive->prepare("
 $stmt->execute([$id_joueur]);
 $commentaires = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Ajout d'un commentaire
+if ($_SERVER["REQUEST_METHOD"] === "POST" && ($_POST["action"] ?? "") === "add_comment") {
+    $comment_text = trim($_POST["comment_texte"] ?? "");
+    if ($comment_text === "") {
+        $_SESSION["comment_error"] = "Le commentaire est obligatoire.";
+    } else {
+        addComment($gestion_sportive, $id_joueur, $comment_text);
+        $_SESSION["comment_success"] = "✅ Commentaire ajouté.";
+    }
+    header("Location: modifier_joueur.php?id=" . $id_joueur);
+    exit;
+}
+
 // Récupérer les statistiques du joueur
 $stmt = $gestion_sportive->prepare("
     SELECT 
@@ -72,6 +85,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if (empty($data["nom"])) $errors[] = "Le nom est requis.";
     if (empty($data["prenom"])) $errors[] = "Le prénom est requis.";
     if (empty($data["num_licence"])) $errors[] = "Le numéro de licence est requis.";
+    if (empty($data["date_naissance"])) $errors[] = "La date de naissance est requise.";
+    if ($data["taille_cm"] === null) $errors[] = "La taille est requise.";
+    if ($data["poids_kg"] === null) $errors[] = "Le poids est requis.";
     if (empty($data["id_statut"])) $errors[] = "Le statut est requis.";
 
     if (!empty($data["num_licence"]) && !preg_match('/^LIC[0-9]{3}$/', $data["num_licence"])) {
@@ -211,18 +227,19 @@ include __DIR__ . "/../includes/header.php";
                         </div>
                         
                         <div class="form-group">
-                            <label for="date_naissance" class="form-label">Date de Naissance</label>
+                            <label for="date_naissance" class="form-label required">Date de Naissance</label>
                             <input type="date" 
                                    id="date_naissance" 
                                    name="date_naissance" 
                                    class="form-control" 
                                    value="<?= $joueur['date_naissance'] ?>"
+                                   required
                                    min="1970-01-01"
                                    max="<?= date('Y-m-d', strtotime('-15 years')) ?>">
                         </div>
                         
                         <div class="form-group">
-                            <label for="taille_cm" class="form-label">Taille (cm)</label>
+                            <label for="taille_cm" class="form-label required">Taille (cm)</label>
                             <input type="number" 
                                    id="taille_cm" 
                                    name="taille_cm" 
@@ -230,6 +247,7 @@ include __DIR__ . "/../includes/header.php";
                                    min="140" 
                                    max="220" 
                                    step="1"
+                                   required
                                    value="<?= $joueur['taille_cm'] ?>">
                             <div class="form-help">
                                 <i class="fas fa-ruler-vertical"></i>
@@ -238,7 +256,7 @@ include __DIR__ . "/../includes/header.php";
                         </div>
                         
                         <div class="form-group">
-                            <label for="poids_kg" class="form-label">Poids (kg)</label>
+                            <label for="poids_kg" class="form-label required">Poids (kg)</label>
                             <input type="number" 
                                    id="poids_kg" 
                                    name="poids_kg" 
@@ -246,6 +264,7 @@ include __DIR__ . "/../includes/header.php";
                                    min="40" 
                                    max="120" 
                                    step="0.1"
+                                   required
                                    value="<?= $joueur['poids_kg'] ?>">
                             <div class="form-help">
                                 <i class="fas fa-weight"></i>
@@ -307,25 +326,57 @@ include __DIR__ . "/../includes/header.php";
                     </div>
                 </div>
 
-                <!-- Recent Comments -->
-                <?php if (!empty($commentaires)): ?>
+                <!-- Commentaires -->
                 <div class="comments-card">
-                    <h3 class="card-title"><i class="fas fa-comment-alt"></i> Commentaires Récents</h3>
+                    <h3 class="card-title"><i class="fas fa-comment-alt"></i> Commentaires</h3>
+
+                    <?php if (isset($_SESSION["comment_success"])): ?>
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i>
+                            <div><?= htmlspecialchars($_SESSION["comment_success"]) ?></div>
+                        </div>
+                        <?php unset($_SESSION["comment_success"]); ?>
+                    <?php endif; ?>
+
+                    <?php if (isset($_SESSION["comment_error"])): ?>
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <div><?= htmlspecialchars($_SESSION["comment_error"]) ?></div>
+                        </div>
+                        <?php unset($_SESSION["comment_error"]); ?>
+                    <?php endif; ?>
+
+                    <form method="POST" class="comment-form">
+                        <input type="hidden" name="action" value="add_comment">
+                        <label for="comment_texte" class="form-label">Ajouter un commentaire</label>
+                        <textarea id="comment_texte" name="comment_texte" class="comment-textarea" rows="4" maxlength="500" required></textarea>
+                        <div class="comment-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus-circle"></i> Ajouter
+                            </button>
+                        </div>
+                    </form>
+
                     <div class="comments-list">
-                        <?php foreach ($commentaires as $comment): ?>
+                        <?php if (!empty($commentaires)): ?>
+                            <?php foreach ($commentaires as $comment): ?>
+                                <div class="comment-item">
+                                    <div class="comment-date">
+                                        <i class="far fa-calendar"></i>
+                                        <?= date('d/m/Y H:i', strtotime($comment['date_commentaire'])) ?>
+                                    </div>
+                                    <div class="comment-text">
+                                        <?= nl2br(htmlspecialchars($comment['texte'])) ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
                             <div class="comment-item">
-                                <div class="comment-date">
-                                    <i class="far fa-calendar"></i>
-                                    <?= date('d/m/Y H:i', strtotime($comment['date_commentaire'])) ?>
-                                </div>
-                                <div class="comment-text">
-                                    <?= nl2br(htmlspecialchars($comment['texte'])) ?>
-                                </div>
+                                <div class="comment-text">Aucun commentaire pour ce joueur.</div>
                             </div>
-                        <?php endforeach; ?>
+                        <?php endif; ?>
                     </div>
                 </div>
-                <?php endif; ?>
     </div>
     </div>
     </div>

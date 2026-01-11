@@ -145,6 +145,42 @@
         gap: 10px;
     }
 
+    .panel-text {
+        color: rgba(255,255,255,0.8);
+        line-height: 1.6;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .panel-divider {
+        height: 1px;
+        background: rgba(255,255,255,0.1);
+        margin: 20px 0;
+    }
+
+    .bench-slots {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .bench-slot {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .bench-label {
+        font-size: 0.95rem;
+        color: rgba(255,255,255,0.85);
+    }
+
+    .bench-select {
+        padding: 10px 14px;
+        font-size: 0.95rem;
+    }
+
     /* =============================
        LISTE JOUEURS
     ============================= */
@@ -199,6 +235,53 @@
         align-items: center;
         transition: var(--transition);
         border: 1px solid transparent;
+    }
+
+    .player-info-card {
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .player-meta {
+        font-size: 0.85rem;
+        color: rgba(255,255,255,0.7);
+        margin-top: 6px;
+    }
+
+    .player-history {
+        margin-top: 8px;
+        font-size: 0.85rem;
+        color: rgba(255,255,255,0.85);
+    }
+
+    .player-history summary {
+        cursor: pointer;
+        color: var(--secondary);
+        font-weight: 600;
+    }
+
+    .history-section {
+        margin-top: 6px;
+        padding-top: 6px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .history-title {
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: rgba(255,255,255,0.85);
+    }
+
+    .history-item {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 4px;
+        color: rgba(255,255,255,0.75);
+    }
+
+    .history-date {
+        color: rgba(255,255,255,0.6);
+        min-width: 70px;
     }
 
     .player-card:hover {

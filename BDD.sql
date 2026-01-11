@@ -35,9 +35,9 @@ CREATE TABLE joueur (
     nom VARCHAR(50) NOT NULL,
     prenom VARCHAR(50) NOT NULL,
     num_licence VARCHAR(20) UNIQUE NOT NULL,
-    date_naissance DATE,
-    taille_cm INT,
-    poids_kg DECIMAL(5,2),
+    date_naissance DATE NOT NULL,
+    taille_cm INT NOT NULL,
+    poids_kg DECIMAL(5,2) NOT NULL,
     id_statut INT NOT NULL,
     FOREIGN KEY (id_statut) REFERENCES statut(id_statut)
 );

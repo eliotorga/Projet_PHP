@@ -19,7 +19,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $password = $_POST["password"] ?? "";
 
     // Vérification simple des identifiants
-    if ($login === $AUTH_LOGIN && $password === $AUTH_PASSWORD) {
+    if ($login === $AUTH_LOGIN && password_verify($password, $AUTH_PASSWORD_HASH)) {
         // Connexion réussie
         $_SESSION["user_id"] = $login;
         $_SESSION["last_activity"] = time();

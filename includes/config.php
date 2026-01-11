@@ -21,7 +21,8 @@ define('PASSWORD_OPTIONS', [
 ----------------------------*/
 
 $AUTH_LOGIN = "admin";  // Nom d'utilisateur
-$AUTH_PASSWORD = "admin"; // Mot de passe en clair (à ne faire qu'en développement)
+// Mot de passe haché (bcrypt). Générer avec: htpasswd -nbBC 12 admin 'motdepasse'
+$AUTH_PASSWORD_HASH = '$2y$12$rPJltJboyCt8h9q33Y0Olee7NheJZkO3Cw7y/T7w3ii7uL8FkTFwm';
 
 
 /* ---------------------------

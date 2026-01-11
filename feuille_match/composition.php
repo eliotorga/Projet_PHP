@@ -4,6 +4,7 @@
 
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
+require_once __DIR__ . "/../bdd/db_commentaire.php";
 
 /* =============================
    VÉRIFICATION MATCH
@@ -30,127 +31,11 @@ if (!$match) {
     die("<div class='error-container'><h2>⚽ Match introuvable</h2><p>Le match sélectionné n'existe pas.</p></div>");
 }
 
-$stmt = $gestion_sportive->prepare("SELECT 1 FROM participation WHERE id_match = ? AND evaluation IS NOT NULL LIMIT 1");
-$stmt->execute([$id_match]);
-$has_evaluations = (bool)$stmt->fetchColumn();
-
 $nowDt = new DateTimeImmutable('now');
 $dateMatchObj = new DateTimeImmutable($match['date_heure']);
-if ($match['etat'] === 'JOUE' && $dateMatchObj <= $nowDt) {
+if ($dateMatchObj <= $nowDt || $match['etat'] === 'JOUE') {
     header("Location: voir_composition.php?id_match=$id_match");
     exit();
-}
-
-/* =============================
-   VÉRIFIER SI LE MATCH EST DÉJÀ JOUÉ AVEC ÉVALUATIONS
-============================= */
-if ($match['etat'] === 'JOUE' && $dateMatchObj <= $nowDt && $has_evaluations) {
-    // Si le match est joué, dans le passé ET a des évaluations, on ne peut plus modifier
-    $is_played = true;
-    $message = "Ce match a déjà été joué avec évaluations et ne peut plus être modifié.";
-    
-    // Charger le header avec le CSS des erreurs
-    $pageTitle = "Match non modifiable";
-    $extraCSS = "<link rel='stylesheet' href='../assets/css/error_pages.css'>
-    <style>
-        .match-details {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
-            border-left: 4px solid var(--primary);
-        }
-        .match-details h3 {
-            margin-top: 0;
-            color: var(--dark);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .match-info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-        .info-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--gray);
-        }
-        .info-item i {
-            color: var(--primary);
-            width: 20px;
-            text-align: center;
-        }
-        .score-display {
-            font-size: 2rem;
-            font-weight: bold;
-            text-align: center;
-            margin: 15px 0;
-            color: var(--dark);
-        }
-        .team-names {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .team {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .team-logo {
-            width: 30px;
-            height: 30px;
-            background: #e9ecef;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-        }
-    </style>";
-    
-    include "../includes/header.php";
-    ?>
-    
-    <div class="match-details">
-        <h3><i class="fas fa-exclamation-triangle"></i> Match non modifiable</h3>
-        <div class="match-info-grid">
-            <div class="info-item">
-                <i class="fas fa-futbol"></i>
-                <span><strong>Adversaire :</strong> <?= htmlspecialchars($match["adversaire"]) ?></span>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-calendar-alt"></i>
-                <span><strong>Date :</strong> <?= date("d/m/Y", strtotime($match["date_heure"])) ?></span>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-clock"></i>
-                <span><strong>Heure :</strong> <?= date("H:i", strtotime($match["date_heure"])) ?></span>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-map-marker-alt"></i>
-                <span><strong>Lieu :</strong> <?= htmlspecialchars($match["lieu"] == "DOMICILE" ? "Domicile" : "Extérieur") ?></span>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-info-circle"></i>
-                <span><strong>État :</strong> <?= htmlspecialchars($match["etat"]) ?></span>
-            </div>
-        </div>
-        
-        <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
-            <p style="margin: 0; color: #856404;"><strong><?= $message ?></strong></p>
-            <p style="margin: 10px 0 0 0; color: #856404;">Vous pouvez consulter la composition en cliquant sur le bouton ci-dessous.</p>
-            <a href="voir_composition.php?id_match=<?= $id_match ?>" class="btn-action" style="display: inline-block; padding: 10px 20px; background: var(--primary); color: white; text-decoration: none; border-radius: 5px; margin-top: 10px;">
-                <i class="fas fa-eye"></i> Voir la composition
-            </a>
-        </div>
-    </div>
-    
-    <?php include "../includes/footer.php"; ?>
-    <?php exit();
 }
 
 
@@ -158,12 +43,19 @@ if ($match['etat'] === 'JOUE' && $dateMatchObj <= $nowDt && $has_evaluations) {
    JOUEURS ACTIFS AVEC LEUR NUMÉRO DE LICENCE
 ============================= */
 $joueurs = $gestion_sportive->query("
-    SELECT j.id_joueur, j.nom, j.prenom, j.num_licence, s.code AS statut
+    SELECT j.id_joueur, j.nom, j.prenom, j.num_licence, j.taille_cm, j.poids_kg, s.code AS statut
     FROM joueur j
     JOIN statut s ON s.id_statut = j.id_statut
     WHERE s.code = 'ACT'
     ORDER BY j.nom, j.prenom
 ")->fetchAll(PDO::FETCH_ASSOC);
+
+$commentaire_histories = [];
+$evaluation_histories = [];
+foreach ($joueurs as $j) {
+    $commentaire_histories[$j['id_joueur']] = getCommentaireHistory($gestion_sportive, (int)$j['id_joueur'], 3);
+    $evaluation_histories[$j['id_joueur']] = getEvaluationHistory($gestion_sportive, (int)$j['id_joueur'], 3);
+}
 
 /* =============================
    POSTES AVEC ORDRE D'AFFICHAGE
@@ -171,6 +63,8 @@ $joueurs = $gestion_sportive->query("
 $postes = $gestion_sportive->query("
     SELECT * FROM poste ORDER BY id_poste ASC
 ")->fetchAll(PDO::FETCH_ASSOC);
+
+$bench_slots = array_values(array_filter($postes, fn($p) => ($p['code'] ?? '') !== 'REM'));
 
 /* =============================
    VÉRIFIER LES PARTICIPATIONS EXISTANTES
@@ -205,12 +99,16 @@ foreach ($participations_existantes as $participation) {
     if ($participation['role'] === 'TITULAIRE') {
         $titulaires_existants[] = $participation['id_joueur'];
     } else {
-        $remplacants_existants[] = $participation['id_joueur'];
+        $remplacants_existants[] = [
+            'id_joueur' => $participation['id_joueur'],
+            'id_poste' => $participation['id_poste']
+        ];
     }
 }
 
 $titulaires_selected_ids = array_values(array_unique(array_filter($draft_titulaires !== null ? $draft_titulaires : $titulaires_existants, fn($v) => $v !== null && $v !== '')));
-$remplacants_selected_ids = array_values(array_unique(array_filter($draft_remplacants !== null ? $draft_remplacants : $remplacants_existants, fn($v) => $v !== null && $v !== '')));
+$remplacants_values = $draft_remplacants !== null ? array_values($draft_remplacants) : array_map(fn($p) => $p['id_joueur'], $remplacants_existants);
+$remplacants_selected_ids = array_values(array_unique(array_filter($remplacants_values, fn($v) => $v !== null && $v !== '')));
 
 include "../includes/header.php";
 ?>
@@ -286,41 +184,63 @@ include "../includes/header.php";
             <input type="hidden" name="id_match" value="<?= $id_match ?>">
             
             <div class="main-grid">
-                <!-- COLONNE GAUCHE : SÉLECTION DES REMPLAÇANTS -->
+                <!-- COLONNE GAUCHE : JOUEURS DISPONIBLES -->
                 <div class="panel">
-                    <h3 class="panel-title"><i class="fas fa-users"></i> Remplaçants</h3>
-                    <p class="panel-description">Cochez les joueurs remplaçants. (Les titulaires sont prioritaires)</p>
+                    <h3 class="panel-title"><i class="fas fa-users"></i> Joueurs disponibles</h3>
+                    <p class="panel-description">Taille, poids et historiques pour chaque joueur actif.</p>
                     
                     <div class="players-list">
                         <?php foreach ($joueurs as $j):
-                            $est_titulaire = in_array($j['id_joueur'], $titulaires_selected_ids);
-                            $est_remplacant = in_array($j['id_joueur'], $remplacants_selected_ids) && !$est_titulaire;
                             $est_blesse = ($j['statut'] === 'BLE');
                             $est_suspendu = ($j['statut'] === 'SUS');
+                            $comment_history = $commentaire_histories[$j['id_joueur']] ?? [];
+                            $evaluation_history = $evaluation_histories[$j['id_joueur']] ?? [];
                         ?>
-                            <label class="player-card player-select">
-                                <input type="checkbox"
-                                       class="player-checkbox"
-                                       name="remplacants[]"
-                                       value="<?= $j['id_joueur'] ?>"
-                                       <?= $est_remplacant ? 'checked' : '' ?>
-                                       <?= $est_titulaire ? 'disabled' : '' ?>>
-
+                            <div class="player-card player-info-card">
                                 <div class="player-avatar <?= $est_blesse ? 'injured' : ($est_suspendu ? 'suspended' : '') ?>">
-                                <?= strtoupper(substr($j['prenom'], 0, 1) . substr($j['nom'], 0, 1)) ?>
-                            </div>
+                                    <?= strtoupper(substr($j['prenom'], 0, 1) . substr($j['nom'], 0, 1)) ?>
+                                </div>
                                 <div class="player-info">
                                     <div class="player-name">
                                         <?= htmlspecialchars($j['prenom'] . ' ' . $j['nom']) ?>
                                     </div>
                                     <div class="player-license">
                                         <?= htmlspecialchars($j['num_licence']) ?>
-                                        <?php if ($est_titulaire): ?>
-                                            <span style="color: var(--accent); font-size: 0.8em;">(Titulaire)</span>
-                                        <?php endif; ?>
                                     </div>
+                                    <div class="player-meta">
+                                        Taille: <?= htmlspecialchars($j['taille_cm']) ?> cm · Poids: <?= htmlspecialchars($j['poids_kg']) ?> kg
+                                    </div>
+                                    <details class="player-history">
+                                        <summary>Historique</summary>
+                                        <div class="history-section">
+                                            <div class="history-title">Commentaires</div>
+                                            <?php if (!empty($comment_history)): ?>
+                                                <?php foreach ($comment_history as $c): ?>
+                                                    <div class="history-item">
+                                                        <span class="history-date"><?= date('d/m/Y', strtotime($c['date_commentaire'])) ?></span>
+                                                        <span><?= htmlspecialchars($c['texte']) ?></span>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <div class="history-item">Aucun commentaire.</div>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="history-section">
+                                            <div class="history-title">Évaluations</div>
+                                            <?php if (!empty($evaluation_history)): ?>
+                                                <?php foreach ($evaluation_history as $e): ?>
+                                                    <div class="history-item">
+                                                        <span class="history-date"><?= date('d/m/Y', strtotime($e['date_heure'])) ?></span>
+                                                        <span><?= htmlspecialchars($e['adversaire']) ?> · <?= (int)$e['evaluation'] ?>/5</span>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <div class="history-item">Aucune évaluation.</div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </details>
                                 </div>
-                            </label>
+                            </div>
                         <?php endforeach; ?>
                     </div>
                 </div>
@@ -412,16 +332,50 @@ include "../includes/header.php";
                     </div>
                 </div>
 
-                <!-- COLONNE DROITE : INFOS -->
+                <!-- COLONNE DROITE : REMPLAÇANTS + INFOS -->
                 <div class="panel">
+                    <h3 class="panel-title"><i class="fas fa-users"></i> Remplaçants par poste</h3>
+                    <div class="bench-slots">
+                        <?php $bench_used_players = []; ?>
+                        <?php foreach ($bench_slots as $idx => $poste): 
+                            $slot_key = "poste_" . $poste['id_poste'] . "_" . $idx;
+                            $current_value = '';
+                            if ($draft_remplacants !== null) {
+                                $current_value = $draft_remplacants[$slot_key] ?? '';
+                            } else {
+                                foreach ($remplacants_existants as $p) {
+                                    if ((int)$p['id_poste'] === (int)$poste['id_poste'] && !in_array($p['id_joueur'], $bench_used_players, true)) {
+                                        $current_value = (string)$p['id_joueur'];
+                                        $bench_used_players[] = $p['id_joueur'];
+                                        break;
+                                    }
+                                }
+                            }
+                        ?>
+                            <div class="bench-slot">
+                                <label class="bench-label"><?= htmlspecialchars($poste['libelle']) ?></label>
+                                <select name="remplacant_poste[<?= $slot_key ?>]" class="search-input bench-select">
+                                    <option value="">-- Sélectionner --</option>
+                                    <?php foreach ($joueurs as $j):
+                                        $selected = ((string)$j['id_joueur'] === (string)$current_value);
+                                        $disabled = ((string)$j['id_joueur'] !== (string)$current_value) && in_array($j['id_joueur'], $titulaires_selected_ids, true);
+                                    ?>
+                                        <option value="<?= $j['id_joueur'] ?>" <?= $selected ? 'selected' : '' ?> <?= $disabled ? 'disabled' : '' ?>>
+                                            <?= htmlspecialchars($j['prenom'] . ' ' . $j['nom']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <div class="panel-divider"></div>
+
                     <h3 class="panel-title"><i class="fas fa-info-circle"></i> Instructions</h3>
-                    <div style="color: rgba(255,255,255,0.8); line-height: 1.6;">
+                    <div class="panel-text">
                         <p>1. Sélectionnez les titulaires pour chaque poste sur le terrain.</p>
-                        <br>
-                        <p>2. Cochez les remplaçants dans la liste de gauche.</p>
-                        <br>
+                        <p>2. Choisissez les remplaçants poste par poste à droite.</p>
                         <p>3. Cliquez sur "Enregistrer" pour valider la feuille de match.</p>
-                        <br>
                         <div class="stat-card" style="margin-top: 20px;">
                             <div class="stat-label">Joueurs dispo</div>
                             <div class="stat-number"><?= count($joueurs) ?></div>

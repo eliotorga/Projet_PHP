@@ -4,6 +4,7 @@
 
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
+require_once "../bdd/db_match.php";
 
 /* =====================
    RÉCUPÉRATION DES MATCHS AVEC STATISTIQUES ET FILTRES
@@ -14,61 +15,11 @@ $filterEtat = $_GET['etat'] ?? 'all';
 $filterResultat = $_GET['resultat'] ?? 'all';
 $filterDate = $_GET['date'] ?? 'all';
 
-// Construction de la requête
-$sql = "
-    SELECT 
-        m.id_match,
-        m.date_heure,
-        m.adversaire,
-        m.lieu,
-        m.resultat,
-        m.etat,
-        m.score_equipe,
-        m.score_adverse,
-        COUNT(p.id_joueur) AS nb_joueurs,
-        AVG(p.evaluation) AS moyenne_eval
-    FROM matchs m
-    LEFT JOIN participation p ON p.id_match = m.id_match
-    WHERE 1=1
-";
-
-$params = [];
-
-// Application des filtres
-if ($filterEtat !== 'all') {
-    $sql .= " AND m.etat = :etat";
-    $params[':etat'] = $filterEtat;
-}
-
-if ($filterResultat !== 'all') {
-    if ($filterResultat === 'null') {
-         $sql .= " AND m.resultat IS NULL";
-    } else {
-        $sql .= " AND m.resultat = :resultat";
-        $params[':resultat'] = $filterResultat;
-    }
-}
-
-if ($filterDate !== 'all') {
-    if ($filterDate === 'future') {
-        $sql .= " AND m.date_heure > NOW()";
-    } elseif ($filterDate === 'past') {
-        $sql .= " AND m.date_heure <= NOW()";
-    } elseif ($filterDate === 'month') {
-        $sql .= " AND MONTH(m.date_heure) = MONTH(CURRENT_DATE()) AND YEAR(m.date_heure) = YEAR(CURRENT_DATE())";
-    }
-}
-
-$sql .= "
-    GROUP BY m.id_match
-    ORDER BY m.date_heure DESC
-";
-
-$stmt = $gestion_sportive->prepare($sql);
-$stmt->execute($params);
-
-
-$matchs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$matchs = getMatchesWithStats($gestion_sportive, [
+    'etat' => $filterEtat,
+    'resultat' => $filterResultat,
+    'date' => $filterDate
+]);
 
 include "../includes/header.php";
 ?>

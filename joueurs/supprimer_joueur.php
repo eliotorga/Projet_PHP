@@ -4,30 +4,14 @@
 
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
+require_once "../bdd/db_joueur.php";
 
 // Initialiser les messages
 $message = "";
 $error = "";
 
 // Récupérer tous les joueurs avec leurs statistiques
-$joueurs = $gestion_sportive->query("
-    SELECT 
-        j.id_joueur,
-        j.nom,
-        j.prenom,
-        j.num_licence,
-        j.date_naissance,
-        s.libelle AS statut_libelle,
-        s.code AS statut_code,
-        COUNT(DISTINCT p.id_match) AS nb_matchs,
-        COUNT(DISTINCT c.id_commentaire) AS nb_commentaires
-    FROM joueur j
-    JOIN statut s ON s.id_statut = j.id_statut
-    LEFT JOIN participation p ON p.id_joueur = j.id_joueur
-    LEFT JOIN commentaire c ON c.id_joueur = j.id_joueur
-    GROUP BY j.id_joueur
-    ORDER BY j.nom, j.prenom
-")->fetchAll(PDO::FETCH_ASSOC);
+$joueurs = getPlayersWithStats($gestion_sportive);
 
 // Calculer l'âge pour chaque joueur
 foreach ($joueurs as &$joueur) {
@@ -57,23 +41,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             
             foreach ($ids_joueurs as $id_joueur) {
                 // Récupérer le nom du joueur avant suppression
-                $stmt = $gestion_sportive->prepare("SELECT nom, prenom FROM joueur WHERE id_joueur = ?");
-                $stmt->execute([$id_joueur]);
-                if ($joueur_info = $stmt->fetch()) {
+                $joueur_info = getPlayerNameById($gestion_sportive, $id_joueur);
+                if ($joueur_info) {
                     $joueurs_supprimes[] = $joueur_info['prenom'] . ' ' . $joueur_info['nom'];
                 }
-                
-                // Supprimer les commentaires
-                $stmt = $gestion_sportive->prepare("DELETE FROM commentaire WHERE id_joueur = ?");
-                $stmt->execute([$id_joueur]);
-                
-                // Supprimer les participations
-                $stmt = $gestion_sportive->prepare("DELETE FROM participation WHERE id_joueur = ?");
-                $stmt->execute([$id_joueur]);
-                
-                // Supprimer le joueur
-                $stmt = $gestion_sportive->prepare("DELETE FROM joueur WHERE id_joueur = ?");
-                $stmt->execute([$id_joueur]);
+
+                deletePlayerCascade($gestion_sportive, $id_joueur);
             }
             
             $gestion_sportive->commit();
@@ -99,12 +72,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $ids = array_map('intval', $_POST['joueurs_selectionnes']);
             
             // Récupérer les infos des joueurs pour la confirmation
-            if (count($ids) > 0) {
-                $placeholders = implode(',', array_fill(0, count($ids), '?'));
-                $stmt = $gestion_sportive->prepare("SELECT id_joueur, nom, prenom FROM joueur WHERE id_joueur IN ($placeholders)");
-                $stmt->execute($ids);
-                $players_to_confirm = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            }
+            $players_to_confirm = getPlayersByIds($gestion_sportive, $ids);
         } else {
             $error = "Veuillez sélectionner au moins un joueur à supprimer.";
         }

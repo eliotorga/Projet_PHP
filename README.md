@@ -36,7 +36,7 @@ https://github.com/eliotorga/Projet_PHP.git
 Éditez le fichier `includes/config.php` :
 ```php
 $AUTH_LOGIN = "votre_identifiant";
-$AUTH_PASSWORD = "votre_mot_de_passe";
+$AUTH_PASSWORD_HASH = '$2y$12$...'; // bcrypt (ex: htpasswd -nbBC 12 admin "motdepasse")
 ```
 
 ### Configuration de la base de données
@@ -59,4 +59,3 @@ $DB_PASS = "";
 - Les identifiants sont configurés directement dans le code (exigence du projet)
 - L'application utilise PDO pour une connexion sécurisée à la base de données
 - Le système de session inclut des protections de base contre le détournement de session
-

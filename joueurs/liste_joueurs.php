@@ -4,33 +4,12 @@
 
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
+require_once "../bdd/db_joueur.php";
 
 /* ==========================
    RÉCUPÉRATION JOUEURS AVEC STATISTIQUES
 ========================== */
-$joueurs = $gestion_sportive->query("
-    SELECT 
-        j.id_joueur,
-        j.nom,
-        j.prenom,
-        j.num_licence,
-        j.date_naissance,
-        j.taille_cm,
-        j.poids_kg,
-        s.id_statut,
-        s.code AS statut_code,
-        s.libelle AS statut_libelle,
-        COUNT(DISTINCT p.id_match) AS nb_matchs,
-        ROUND(AVG(p.evaluation), 1) AS note_moyenne,
-        COUNT(c.id_commentaire) AS nb_commentaires
-    FROM joueur j
-    JOIN statut s ON s.id_statut = j.id_statut
-    LEFT JOIN participation p ON p.id_joueur = j.id_joueur
-    LEFT JOIN commentaire c ON c.id_joueur = j.id_joueur
-    GROUP BY j.id_joueur, j.nom, j.prenom, j.num_licence, j.date_naissance, 
-             j.taille_cm, j.poids_kg, s.id_statut, s.code, s.libelle
-    ORDER BY j.nom, j.prenom
-")->fetchAll(PDO::FETCH_ASSOC);
+$joueurs = getPlayersWithStats($gestion_sportive);
 
 // Calcul de l'âge pour chaque joueur
 foreach ($joueurs as &$joueur) {
@@ -45,16 +24,7 @@ foreach ($joueurs as &$joueur) {
 unset($joueur); // Détruire la référence
 
 // Statistiques globales
-$stats = $gestion_sportive->query("
-    SELECT 
-        s.code,
-        s.libelle,
-        COUNT(j.id_joueur) AS nb_joueurs
-    FROM statut s
-    LEFT JOIN joueur j ON j.id_statut = s.id_statut
-    GROUP BY s.id_statut, s.code, s.libelle
-    ORDER BY s.id_statut
-")->fetchAll(PDO::FETCH_ASSOC);
+$stats = getStatutCounts($gestion_sportive);
 
 // Filtrage et Tri PHP
 $search = $_GET['search'] ?? '';

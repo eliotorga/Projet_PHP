@@ -4,6 +4,7 @@
 
 require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";
+require_once __DIR__ . "/../bdd/db_stats.php";
 include __DIR__ . "/../includes/header.php";
 
 /* =======================
@@ -25,36 +26,20 @@ function statutClass($statut) {
 /* =======================
    STATS ÉQUIPE
 ======================= */
-$totalMatchs = $gestion_sportive->query("
-    SELECT COUNT(*) FROM matchs WHERE etat='JOUE'
-")->fetchColumn();
-
-$res = $gestion_sportive->query("
-    SELECT resultat, COUNT(*) nb
-    FROM matchs
-    WHERE etat='JOUE'
-    GROUP BY resultat
-")->fetchAll(PDO::FETCH_KEY_PAIR);
+$totalMatchs = getPlayedMatchesCount($gestion_sportive);
+$res = getResultsCountMap($gestion_sportive);
 
 $victoires = $res["VICTOIRE"] ?? 0;
 $defaites  = $res["DEFAITE"] ?? 0;
 $nuls      = $res["NUL"] ?? 0;
 
+// Matchs joues (ordre decroissant) pour les selections consecutives
+$matchsJoues = getPlayedMatchIds($gestion_sportive);
+
 /* =======================
    LISTE DES JOUEURS & STATS
 ======================= */
-$sql = "
-    SELECT j.id_joueur, j.nom, j.prenom, s.libelle AS statut
-    FROM joueur j
-    JOIN statut s ON s.id_statut = j.id_statut
-";
-
-// Filtres SQL de base (pour le statut si possible, mais on peut tout faire en PHP si on veut filtrer sur des champs calculés)
-$params = [];
-$where = [];
-
-// On récupère tous les joueurs pour le calcul des stats
-$joueurs = $gestion_sportive->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+$joueurs = getPlayersBasicWithStatus($gestion_sportive);
 
 /* =======================
    CALCUL DES STATS (PHP)
@@ -67,64 +52,29 @@ foreach ($joueurs as $j) {
     $statut = $j["statut"];
 
     /* Titularisations / remplacements */
-    $stmt = $gestion_sportive->prepare("
-        SELECT
-            SUM(role='TITULAIRE') AS titu,
-            SUM(role='REMPLACANT') AS remp
-        FROM participation
-        WHERE id_joueur=?
-    ");
-    $stmt->execute([$id]);
-    $roles = $stmt->fetch(PDO::FETCH_ASSOC);
+    $roles = getPlayerRoleCounts($gestion_sportive, $id);
     $titu = (int)($roles["titu"] ?? 0);
     $remp = (int)($roles["remp"] ?? 0);
 
     /* Moyenne des évaluations */
-    $stmt = $gestion_sportive->prepare("
-        SELECT ROUND(AVG(evaluation),2)
-        FROM participation
-        WHERE id_joueur=? AND evaluation IS NOT NULL
-    ");
-    $stmt->execute([$id]);
-    $moy = $stmt->fetchColumn();
+    $moy = getPlayerAvgEvaluation($gestion_sportive, $id);
     $moyVal = $moy ? (float)$moy : 0;
     $moyDisp = $moy ?? "—";
 
     /* Poste préféré (meilleure moyenne) */
-    $stmt = $gestion_sportive->prepare("
-        SELECT po.libelle
-        FROM participation pa
-        JOIN poste po ON po.id_poste = pa.id_poste
-        WHERE pa.id_joueur=? AND pa.evaluation IS NOT NULL
-        GROUP BY pa.id_poste
-        ORDER BY AVG(pa.evaluation) DESC
-        LIMIT 1
-    ");
-    $stmt->execute([$id]);
-    $poste = $stmt->fetchColumn() ?: "—";
+    $poste = getPlayerBestPosteByEvaluation($gestion_sportive, $id) ?: "—";
 
     /* % matchs gagnés joués */
-    $stmt = $gestion_sportive->prepare("
-        SELECT COUNT(*) total,
-           SUM(m.resultat='VICTOIRE') wins
-        FROM participation pa
-        JOIN matchs m ON m.id_match = pa.id_match
-        WHERE pa.id_joueur=? AND m.etat='JOUE'
-    ");
-    $stmt->execute([$id]);
-    $w = $stmt->fetch(PDO::FETCH_ASSOC);
+    $w = getPlayerWinRateData($gestion_sportive, $id);
     $pctWinVal = $w["total"] > 0 ? pct($w["wins"], $w["total"]) : 0;
     $pctWinDisp = $w["total"] > 0 ? $pctWinVal." %" : "—";
 
     /* Sélections consécutives */
     $consecutifs = 0;
     foreach ($matchsJoues as $mid) {
-        $stmt = $gestion_sportive->prepare("
-            SELECT COUNT(*) FROM participation
-            WHERE id_match=? AND id_joueur=?
-        ");
-        $stmt->execute([$mid, $id]);
-        if ($stmt->fetchColumn() > 0) $consecutifs++;
+        if (getPlayerParticipationCountForMatch($gestion_sportive, (int)$mid, $id) > 0) {
+            $consecutifs++;
+        }
         else break;
     }
 

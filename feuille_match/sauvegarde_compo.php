@@ -8,7 +8,7 @@ require_once __DIR__ . "/../bdd/db_participation.php";
 
 $id_match = intval($_POST["id_match"] ?? 0);
 $titulaires = $_POST["titulaire"] ?? [];
-$remplacants = $_POST["remplacants"] ?? [];
+$remplacants = $_POST["remplacant_poste"] ?? [];
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -25,8 +25,8 @@ if (!$etat_match) {
 
 $nowDt = new DateTimeImmutable('now');
 $dateMatchObj = new DateTimeImmutable($match['date_heure']);
-if ($etat_match === 'JOUE' && $dateMatchObj <= $nowDt) {
-    die("<div class='error-message'>Erreur : Ce match est déjà joué, la composition ne peut plus être modifiée.<br><a href='voir_composition.php?id_match=$id_match'>Voir la composition</a></div>");
+if ($dateMatchObj <= $nowDt) {
+    die("<div class='error-message'>Erreur : ce match est déjà passé, la composition ne peut plus être modifiée.<br><a href='../matchs/liste_matchs.php'>Retour</a></div>");
 }
 
 $stmt = $gestion_sportive->prepare("SELECT COUNT(*) FROM participation WHERE id_match = ? AND evaluation IS NOT NULL");
@@ -98,13 +98,40 @@ foreach ($titulaires as $poste_key => $id_joueur) {
     }
 }
 
-// Validation des remplaçants (filtrer ceux qui sont déjà titulaires)
-$remplacantsClean = [];
-foreach ($remplacants as $id_joueur) {
-    if (!empty($id_joueur) && !in_array($id_joueur, $assignedPlayers)) {
-        if (!in_array($id_joueur, $remplacantsClean)) {
-            $remplacantsClean[] = $id_joueur;
+// Validation des remplaçants par poste
+$remplacants_to_save = [];
+foreach ($remplacants as $slot_key => $id_joueur) {
+    if (!empty($id_joueur)) {
+        if (in_array($id_joueur, $assignedPlayers, true)) {
+            $_SESSION['composition_draft'][$id_match] = [
+                'error' => "Erreur : un joueur est assigné à plusieurs postes.",
+                'titulaires' => $titulaires,
+                'remplacants' => $remplacants
+            ];
+            header("Location: composition.php?id_match=$id_match");
+            exit;
         }
+        $assignedPlayers[] = $id_joueur;
+
+        $poste_id = null;
+        if (is_string($slot_key) && preg_match('/^poste_(\d+)_/', $slot_key, $matches)) {
+            $poste_id = (int)$matches[1];
+        }
+
+        if (!$poste_id) {
+            $_SESSION['composition_draft'][$id_match] = [
+                'error' => "Erreur : poste de remplaçant invalide.",
+                'titulaires' => $titulaires,
+                'remplacants' => $remplacants
+            ];
+            header("Location: composition.php?id_match=$id_match");
+            exit;
+        }
+
+        $remplacants_to_save[] = [
+            'id_joueur' => (int)$id_joueur,
+            'id_poste' => $poste_id
+        ];
     }
 }
 
@@ -148,21 +175,11 @@ foreach ($titulaires_to_save as $titulaire) {
 }
 
 // Enregistrement des remplaçants
-$stmt = $gestion_sportive->prepare("SELECT id_poste FROM poste WHERE code = 'REM' LIMIT 1");
-$stmt->execute();
-$remplacant_poste_id = (int)$stmt->fetchColumn();
-if ($remplacant_poste_id <= 0) {
-    $stmt = $gestion_sportive->prepare("INSERT INTO poste (code, libelle) VALUES ('REM', 'Remplaçant')");
-    $stmt->execute();
-    $stmt = $gestion_sportive->prepare("SELECT id_poste FROM poste WHERE code = 'REM' LIMIT 1");
-    $stmt->execute();
-    $remplacant_poste_id = (int)$stmt->fetchColumn();
-}
-foreach ($remplacantsClean as $id_joueur) {
+foreach ($remplacants_to_save as $remplacant) {
     addParticipation($gestion_sportive, [
         "id_match" => $id_match,
-        "id_joueur" => $id_joueur,
-        "id_poste" => $remplacant_poste_id,
+        "id_joueur" => $remplacant['id_joueur'],
+        "id_poste" => $remplacant['id_poste'],
         "role" => "REMPLACANT",
         "evaluation" => null
     ]);

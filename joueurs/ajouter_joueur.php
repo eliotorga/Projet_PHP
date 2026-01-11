@@ -30,6 +30,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     
     if (empty($data["nom"])) $errors[] = "Le nom est obligatoire";
     if (empty($data["prenom"])) $errors[] = "Le prénom est obligatoire";
+    if (empty($data["num_licence"])) $errors[] = "Le numéro de licence est obligatoire";
+    if (empty($data["date_naissance"])) $errors[] = "La date de naissance est obligatoire";
+    if ($data["taille_cm"] === null) $errors[] = "La taille est obligatoire";
+    if ($data["poids_kg"] === null) $errors[] = "Le poids est obligatoire";
     if (empty($data["id_statut"])) $errors[] = "Le statut est obligatoire";
     
     if (!empty($data["num_licence"])) {
@@ -153,7 +157,7 @@ include __DIR__ . "/../includes/header.php";
                     <!-- NUMÉRO DE LICENCE -->
                     <div class="form-group">
                         <label class="form-label">
-                            <i class="fas fa-id-badge"></i> Numéro de licence
+                            <i class="fas fa-id-badge"></i> Numéro de licence <span class="required">*</span>
                         </label>
                         <div class="input-with-icon">
                             <input type="text" 
@@ -161,24 +165,26 @@ include __DIR__ . "/../includes/header.php";
                                    class="form-input"
                                    placeholder="Ex: LIC001"
                                    value="<?= htmlspecialchars($_POST['num_licence'] ?? '') ?>"
+                                   required
                                    pattern="[A-Za-z0-9]+">
                             <i class="fas fa-barcode input-icon"></i>
                         </div>
                         <div class="form-hint">
-                            <i class="fas fa-info-circle"></i> Facultatif, mais doit être unique
+                            <i class="fas fa-info-circle"></i> Obligatoire, et doit être unique
                         </div>
                     </div>
 
                     <!-- DATE DE NAISSANCE -->
                     <div class="form-group">
                         <label class="form-label">
-                            <i class="fas fa-birthday-cake"></i> Date de naissance
+                            <i class="fas fa-birthday-cake"></i> Date de naissance <span class="required">*</span>
                         </label>
                         <div class="input-with-icon">
                             <input type="date" 
                                    name="date_naissance" 
                                    class="form-input"
                                    value="<?= htmlspecialchars($_POST['date_naissance'] ?? '') ?>"
+                                   required
                                    max="<?= date('Y-m-d', strtotime('-6 years')) ?>"
                                    min="<?= date('Y-m-d', strtotime('-60 years')) ?>">
                             <i class="fas fa-calendar-alt input-icon"></i>
@@ -191,7 +197,7 @@ include __DIR__ . "/../includes/header.php";
                     <!-- TAILLE ET POIDS -->
                     <div class="form-group">
                         <label class="form-label">
-                            <i class="fas fa-ruler-vertical"></i> Taille (cm)
+                            <i class="fas fa-ruler-vertical"></i> Taille (cm) <span class="required">*</span>
                         </label>
                         <div class="input-with-icon">
                             <input type="number" 
@@ -200,6 +206,7 @@ include __DIR__ . "/../includes/header.php";
                                    placeholder="Ex: 180"
                                    min="100"
                                    max="250"
+                                   required
                                    value="<?= htmlspecialchars($_POST['taille_cm'] ?? '') ?>">
                             <i class="fas fa-ruler input-icon"></i>
                         </div>
@@ -208,7 +215,7 @@ include __DIR__ . "/../includes/header.php";
 
                     <div class="form-group">
                         <label class="form-label">
-                            <i class="fas fa-weight"></i> Poids (kg)
+                            <i class="fas fa-weight"></i> Poids (kg) <span class="required">*</span>
                         </label>
                         <div class="input-with-icon">
                             <input type="number" 
@@ -218,6 +225,7 @@ include __DIR__ . "/../includes/header.php";
                                    min="30"
                                    max="150"
                                    step="0.1"
+                                   required
                                    value="<?= htmlspecialchars($_POST['poids_kg'] ?? '') ?>">
                             <i class="fas fa-weight-hanging input-icon"></i>
                         </div>

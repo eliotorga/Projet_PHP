@@ -4,6 +4,7 @@
 
 require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";
+require_once __DIR__ . "/../bdd/db_stats.php";
 include __DIR__ . "/../includes/header.php";
 
 /* =======================
@@ -41,18 +42,7 @@ function calculerScoreImpact($joueur_id, $gestion_sportive) {
     $facteurs = [];
     
     // 1. Performance globale (25%)
-    $stmt = $gestion_sportive->prepare("
-        SELECT 
-            AVG(evaluation) as moyenne,
-            COUNT(*) as nb_matchs,
-            STDDEV(evaluation) as ecart_type
-        FROM participation
-        WHERE id_joueur = ? 
-        AND evaluation IS NOT NULL
-        AND evaluation > 0
-    ");
-    $stmt->execute([$joueur_id]);
-    $eval = $stmt->fetch(PDO::FETCH_ASSOC);
+    $eval = getPlayerEvaluationSummary($gestion_sportive, $joueur_id);
     
     if ($eval['moyenne'] && $eval['nb_matchs'] > 0) {
         // Poids de la note basé sur le nombre de matchs (plus de matchs = plus fiable)
@@ -70,18 +60,7 @@ function calculerScoreImpact($joueur_id, $gestion_sportive) {
     }
     
     // 2. Forme récente (25%) - Derniers 5 matchs
-    $stmt = $gestion_sportive->prepare("
-        SELECT AVG(p.evaluation) as moyenne_recente
-        FROM participation p
-        JOIN matchs m ON m.id_match = p.id_match
-        WHERE p.id_joueur = ? 
-        AND p.evaluation IS NOT NULL
-        AND m.etat = 'JOUE'
-        ORDER BY m.date_heure DESC
-        LIMIT 5
-    ");
-    $stmt->execute([$joueur_id]);
-    $forme_recente = $stmt->fetchColumn();
+    $forme_recente = getPlayerRecentForm($gestion_sportive, $joueur_id);
     
     if ($forme_recente) {
         $forme_score = ($forme_recente / 6) * 25;
@@ -90,23 +69,7 @@ function calculerScoreImpact($joueur_id, $gestion_sportive) {
     }
     
     // 3. Impact sur le résultat (20%)
-    $stmt = $gestion_sportive->prepare("
-        SELECT 
-            COUNT(DISTINCT m.id_match) as total,
-            SUM(CASE 
-                WHEN m.resultat = 'VICTOIRE' AND p.evaluation >= 4 THEN 1 
-                WHEN m.resultat = 'NUL' AND p.evaluation >= 3.5 THEN 1
-                WHEN m.resultat = 'DEFAITE' AND p.evaluation <= 2.5 THEN 0
-                ELSE 0.5 
-            END) as impact_positif
-        FROM participation p
-        JOIN matchs m ON m.id_match = p.id_match
-        WHERE p.id_joueur = ? 
-        AND m.etat = 'JOUE'
-        AND p.evaluation IS NOT NULL
-    ");
-    $stmt->execute([$joueur_id]);
-    $impact_data = $stmt->fetch(PDO::FETCH_ASSOC);
+    $impact_data = getPlayerImpactData($gestion_sportive, $joueur_id);
     
     if ($impact_data['total'] > 0) {
         $impact_score = ($impact_data['impact_positif'] / $impact_data['total']) * 20;
@@ -115,22 +78,7 @@ function calculerScoreImpact($joueur_id, $gestion_sportive) {
     }
     
     // 4. Performance par poste (15%)
-    $stmt = $gestion_sportive->prepare("
-        SELECT 
-            po.libelle as poste,
-            AVG(p.evaluation) as moyenne_poste,
-            COUNT(*) as nb_matchs_poste,
-            (SELECT AVG(evaluation) FROM participation WHERE id_poste = p.id_poste) as moyenne_generale_poste
-        FROM participation p
-        JOIN poste po ON po.id_poste = p.id_poste
-        WHERE p.id_joueur = ? 
-        AND p.evaluation IS NOT NULL
-        GROUP BY p.id_poste, po.libelle
-        ORDER BY AVG(p.evaluation) DESC
-        LIMIT 1
-    ");
-    $stmt->execute([$joueur_id]);
-    $poste_data = $stmt->fetch(PDO::FETCH_ASSOC);
+    $poste_data = getPlayerBestPostePerformance($gestion_sportive, $joueur_id);
     
     if ($poste_data && $poste_data['moyenne_poste'] > 0) {
         // Bonus si le joueur est au-dessus de la moyenne à son poste
@@ -141,17 +89,7 @@ function calculerScoreImpact($joueur_id, $gestion_sportive) {
     }
     
     // 5. Expérience et régularité (15%)
-    $stmt = $gestion_sportive->prepare("
-        SELECT 
-            COUNT(*) as total_matchs,
-            DATEDIFF(NOW(), MIN(m.date_heure)) as jours_premier_match,
-            COUNT(DISTINCT DATE_FORMAT(m.date_heure, '%Y-%m')) as mois_actifs
-        FROM participation p
-        JOIN matchs m ON m.id_match = p.id_match
-        WHERE p.id_joueur = ?
-    ");
-    $stmt->execute([$joueur_id]);
-    $experience_data = $stmt->fetch(PDO::FETCH_ASSOC);
+    $experience_data = getPlayerExperienceData($gestion_sportive, $joueur_id);
     
     if ($experience_data['total_matchs'] > 0) {
         // Score d'expérience basé sur le nombre de matchs (max 7.5 points)
@@ -187,34 +125,13 @@ $tri = $_GET['tri'] ?? 'nom';
    STATISTIQUES GÉNÉRALES
 ======================= */
 // Matchs
-$stats_matchs = $gestion_sportive->query("
-    SELECT 
-        COUNT(*) as total,
-        SUM(CASE WHEN resultat = 'VICTOIRE' THEN 1 ELSE 0 END) as victoires,
-        SUM(CASE WHEN resultat = 'DEFAITE' THEN 1 ELSE 0 END) as defaites,
-        SUM(CASE WHEN resultat = 'NUL' THEN 1 ELSE 0 END) as nuls,
-        SUM(CASE WHEN etat = 'JOUE' THEN 1 ELSE 0 END) as joues,
-        SUM(CASE WHEN etat IN ('A_PREPARER', 'PREPARE') THEN 1 ELSE 0 END) as a_venir
-    FROM matchs
-")->fetch(PDO::FETCH_ASSOC);
+$stats_matchs = getTeamMatchStats($gestion_sportive);
 
 // Performances moyennes
-$performance_moyenne = $gestion_sportive->query("
-    SELECT ROUND(AVG(evaluation), 2) as moyenne
-    FROM participation
-    WHERE evaluation IS NOT NULL
-")->fetchColumn();
+$performance_moyenne = getAverageEvaluation($gestion_sportive);
 
 // Joueurs par statut (pour le filtre)
-$joueurs_statut = $gestion_sportive->query("
-    SELECT 
-        s.libelle as statut,
-        s.code as statut_code,
-        COUNT(j.id_joueur) as nb_joueurs
-    FROM joueur j
-    JOIN statut s ON s.id_statut = j.id_statut
-    GROUP BY s.id_statut, s.libelle, s.code
-")->fetchAll(PDO::FETCH_ASSOC);
+$joueurs_statut = getPlayersByStatut($gestion_sportive);
 
 /* =======================
    SECTION SCORE D'IMPACT
@@ -314,22 +231,7 @@ $interpretations_score = [
 /* =======================
    TOP PERFORMERS AVEC SCORE D'IMPACT
 ======================= */
-$top_performers = $gestion_sportive->query("
-    SELECT 
-        j.id_joueur,
-        j.nom,
-        j.prenom,
-        ROUND(AVG(p.evaluation), 2) as moyenne,
-        COUNT(DISTINCT p.id_match) as nb_matchs,
-        s.libelle as statut
-    FROM joueur j
-    JOIN participation p ON p.id_joueur = j.id_joueur
-    JOIN statut s ON s.id_statut = j.id_statut
-    WHERE p.evaluation IS NOT NULL
-    GROUP BY j.id_joueur, j.nom, j.prenom, s.libelle
-    ORDER BY moyenne DESC
-    LIMIT 5
-")->fetchAll(PDO::FETCH_ASSOC);
+$top_performers = getTopPerformers($gestion_sportive, 5);
 
 // Ajouter le score d'impact aux top performers
 foreach ($top_performers as &$joueur) {
@@ -342,71 +244,27 @@ unset($joueur);
 /* =======================
    STATISTIQUES DÉTAILLÉES DES JOUEURS
 ======================= */
-$joueurs_stats = $gestion_sportive->query("
-    SELECT 
-        j.id_joueur,
-        j.nom,
-        j.prenom,
-        s.libelle AS statut,
-        s.code AS statut_code,
-        COUNT(DISTINCT p.id_match) AS nb_matchs,
-        SUM(CASE WHEN p.role = 'TITULAIRE' THEN 1 ELSE 0 END) AS titularisations,
-        SUM(CASE WHEN p.role = 'REMPLACANT' THEN 1 ELSE 0 END) AS remplacements,
-        ROUND(AVG(p.evaluation), 2) AS moyenne_notes,
-        COUNT(p.evaluation) AS nb_evaluations
-    FROM joueur j
-    JOIN statut s ON s.id_statut = j.id_statut
-    LEFT JOIN participation p ON p.id_joueur = j.id_joueur
-    GROUP BY j.id_joueur, j.nom, j.prenom, s.libelle, s.code
-")->fetchAll(PDO::FETCH_ASSOC);
+$joueurs_stats = getPlayersStatsDetailed($gestion_sportive);
 
 // Ajout des statistiques supplémentaires pour chaque joueur
+$matchsJoues = getPlayedMatchIds($gestion_sportive);
 foreach ($joueurs_stats as &$joueur) {
     $id = $joueur['id_joueur'];
     
     // Poste préféré
-    $stmt = $gestion_sportive->prepare("
-        SELECT po.libelle
-        FROM participation pa
-        JOIN poste po ON po.id_poste = pa.id_poste
-        WHERE pa.id_joueur = ? AND pa.evaluation IS NOT NULL
-        GROUP BY pa.id_poste, po.libelle
-        ORDER BY COUNT(*) DESC, AVG(pa.evaluation) DESC
-        LIMIT 1
-    ");
-    $stmt->execute([$id]);
-    $joueur['poste_prefere'] = $stmt->fetchColumn() ?: "—";
+    $joueur['poste_prefere'] = getPlayerPreferredPoste($gestion_sportive, $id) ?: "—";
     
     // Pourcentage de victoires
-    $stmt = $gestion_sportive->prepare("
-        SELECT 
-            COUNT(DISTINCT m.id_match) as total,
-            SUM(CASE WHEN m.resultat = 'VICTOIRE' THEN 1 ELSE 0 END) as victoires
-        FROM participation pa
-        JOIN matchs m ON m.id_match = pa.id_match
-        WHERE pa.id_joueur = ? AND m.etat = 'JOUE'
-    ");
-    $stmt->execute([$id]);
-    $win_stats = $stmt->fetch(PDO::FETCH_ASSOC);
+    $win_stats = getPlayerWinStats($gestion_sportive, $id);
     $joueur['pct_victoires'] = $win_stats['total'] > 0 ? 
         pct($win_stats['victoires'], $win_stats['total']) : 0;
     
     // Sélections consécutives
-    $matchsJoues = $gestion_sportive->query("
-        SELECT id_match
-        FROM matchs
-        WHERE etat='JOUE'
-        ORDER BY date_heure DESC
-    ")->fetchAll(PDO::FETCH_COLUMN);
-    
     $consecutifs = 0;
     foreach ($matchsJoues as $mid) {
-        $stmt = $gestion_sportive->prepare("
-            SELECT COUNT(*) FROM participation
-            WHERE id_match=? AND id_joueur=?
-        ");
-        $stmt->execute([$mid, $id]);
-        if ($stmt->fetchColumn() > 0) $consecutifs++;
+        if (getPlayerParticipationCountForMatch($gestion_sportive, (int)$mid, $id) > 0) {
+            $consecutifs++;
+        }
         else break;
     }
     $joueur['selections_consecutives'] = $consecutifs;
