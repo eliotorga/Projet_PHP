@@ -5,6 +5,10 @@
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
 require_once __DIR__ . "/../bdd/db_commentaire.php";
+require_once __DIR__ . "/../bdd/db_match.php";
+require_once __DIR__ . "/../bdd/db_joueur.php";
+require_once __DIR__ . "/../bdd/db_poste.php";
+require_once __DIR__ . "/../bdd/db_participation.php";
 
 /* =============================
    VÉRIFICATION MATCH
@@ -19,13 +23,7 @@ $id_match = intval($_GET["id_match"]);
 /* =============================
    INFOS MATCH
 ============================= */
-$stmt = $gestion_sportive->prepare("
-    SELECT *
-    FROM matchs
-    WHERE id_match = ?
-");
-$stmt->execute([$id_match]);
-$match = $stmt->fetch(PDO::FETCH_ASSOC);
+$match = getMatchById($gestion_sportive, $id_match);
 
 if (!$match) {
     die("<div class='error-container'><h2>⚽ Match introuvable</h2><p>Le match sélectionné n'existe pas.</p></div>");
@@ -42,13 +40,7 @@ if ($dateMatchObj <= $nowDt || $match['etat'] === 'JOUE') {
 /* =============================
    JOUEURS ACTIFS AVEC LEUR NUMÉRO DE LICENCE
 ============================= */
-$joueurs = $gestion_sportive->query("
-    SELECT j.id_joueur, j.nom, j.prenom, j.num_licence, j.taille_cm, j.poids_kg, s.code AS statut
-    FROM joueur j
-    JOIN statut s ON s.id_statut = j.id_statut
-    WHERE s.code = 'ACT'
-    ORDER BY j.nom, j.prenom
-")->fetchAll(PDO::FETCH_ASSOC);
+$joueurs = getActivePlayersDetailed($gestion_sportive);
 
 $commentaire_histories = [];
 $evaluation_histories = [];
@@ -60,23 +52,14 @@ foreach ($joueurs as $j) {
 /* =============================
    POSTES AVEC ORDRE D'AFFICHAGE
 ============================= */
-$postes = $gestion_sportive->query("
-    SELECT * FROM poste ORDER BY id_poste ASC
-")->fetchAll(PDO::FETCH_ASSOC);
+$postes = getAllPostesById($gestion_sportive);
 
 $bench_slots = array_values(array_filter($postes, fn($p) => ($p['code'] ?? '') !== 'REM'));
 
 /* =============================
    VÉRIFIER LES PARTICIPATIONS EXISTANTES
 ============================= */
-$stmt = $gestion_sportive->prepare("
-    SELECT p.id_joueur, p.id_poste, p.role, po.libelle AS poste
-    FROM participation p
-    LEFT JOIN poste po ON po.id_poste = p.id_poste
-    WHERE p.id_match = ?
-");
-$stmt->execute([$id_match]);
-$participations_existantes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$participations_existantes = getParticipationRolesByMatch($gestion_sportive, $id_match);
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();

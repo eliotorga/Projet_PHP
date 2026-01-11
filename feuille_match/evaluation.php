@@ -4,6 +4,8 @@
 
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
+require_once __DIR__ . "/../bdd/db_match.php";
+require_once __DIR__ . "/../bdd/db_participation.php";
 
 /* Vérification ID match */
 if (!isset($_GET["id_match"])) {
@@ -12,56 +14,14 @@ if (!isset($_GET["id_match"])) {
 $id_match = (int) $_GET["id_match"];
 
 /* Récupération du match avec plus de détails */
-$stmt = $gestion_sportive->prepare("
-    SELECT 
-        m.date_heure, 
-        m.adversaire, 
-        m.lieu, 
-        m.resultat,
-        m.score_equipe,
-        m.score_adverse,
-        m.etat,
-        COUNT(p.id_joueur) as nb_participants,
-        ROUND(AVG(p.evaluation), 2) as moyenne_existante
-    FROM matchs m
-    LEFT JOIN participation p ON p.id_match = m.id_match
-    WHERE m.id_match = ?
-    GROUP BY m.id_match
-");
-$stmt->execute([$id_match]);
-$match = $stmt->fetch(PDO::FETCH_ASSOC);
+$match = getMatchWithParticipationStats($gestion_sportive, $id_match);
 
 if (!$match) {
     die("Match introuvable.");
 }
 
 /* Récupération des joueurs ayant participé */
-$stmt = $gestion_sportive->prepare("
-    SELECT 
-        p.id_joueur,
-        p.role,
-        p.evaluation,
-        j.nom,
-        j.prenom,
-        j.num_licence,
-        po.libelle AS poste,
-        s.code as statut_code,
-        s.libelle as statut_libelle
-    FROM participation p
-    JOIN joueur j ON j.id_joueur = p.id_joueur
-    LEFT JOIN poste po ON po.id_poste = p.id_poste
-    LEFT JOIN statut s ON j.id_statut = s.id_statut
-    WHERE p.id_match = ?
-    ORDER BY 
-        CASE p.role 
-            WHEN 'TITULAIRE' THEN 1 
-            WHEN 'REMPLACANT' THEN 2 
-            ELSE 3 
-        END,
-        po.libelle
-");
-$stmt->execute([$id_match]);
-$participants = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$participants = getMatchParticipantsForEvaluation($gestion_sportive, $id_match);
 
 /* Calcul des stats pour affichage */
 $nb_notes = 0;

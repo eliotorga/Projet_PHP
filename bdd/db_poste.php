@@ -7,6 +7,11 @@ function getAllPostes(PDO $db) {
     return $db->query($sql)->fetchAll();
 }
 
+function getAllPostesById(PDO $db): array {
+    $sql = "SELECT * FROM poste ORDER BY id_poste ASC";
+    return $db->query($sql)->fetchAll();
+}
+
 function getPosteById(PDO $db, int $id_poste) {
     $stmt = $db->prepare("SELECT * FROM poste WHERE id_poste = ?");
     $stmt->execute([$id_poste]);

@@ -22,6 +22,54 @@ function getMatchById(PDO $db, int $id) {
     return $stmt->fetch();
 }
 
+// Récupérer un match avec stats de participation
+function getMatchWithParticipationStats(PDO $db, int $id_match): ?array {
+    $stmt = $db->prepare("
+        SELECT 
+            m.date_heure, 
+            m.adversaire, 
+            m.lieu, 
+            m.resultat,
+            m.score_equipe,
+            m.score_adverse,
+            m.etat,
+            COUNT(p.id_joueur) as nb_participants,
+            ROUND(AVG(p.evaluation), 2) as moyenne_existante
+        FROM matchs m
+        LEFT JOIN participation p ON p.id_match = m.id_match
+        WHERE m.id_match = ?
+        GROUP BY m.id_match
+    ");
+    $stmt->execute([$id_match]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+// Statistiques simples d'un match (nb joueurs / moyenne)
+function getMatchStatsSummary(PDO $db, int $id_match): array {
+    $stmt = $db->prepare("
+        SELECT 
+            COUNT(*) as nb_joueurs,
+            AVG(evaluation) as moyenne_eval
+        FROM participation 
+        WHERE id_match = ?
+    ");
+    $stmt->execute([$id_match]);
+    return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+}
+
+// Liste des adversaires existants
+function getDistinctAdversaires(PDO $db): array {
+    $stmt = $db->query("
+        SELECT DISTINCT adversaire 
+        FROM matchs 
+        WHERE adversaire IS NOT NULL 
+          AND adversaire != '' 
+        ORDER BY adversaire
+    ");
+    return $stmt->fetchAll(PDO::FETCH_COLUMN);
+}
+
 // Prochains matchs (non joués)
 function getUpcomingMatches(PDO $db) {
     $sql = "SELECT * FROM matchs

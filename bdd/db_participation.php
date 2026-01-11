@@ -27,6 +27,108 @@ function getParticipationByMatch(PDO $db, int $id_match) {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+// Récupérer les participations d'un match (id_joueur, id_poste, role)
+function getParticipationRolesByMatch(PDO $db, int $id_match): array {
+    $stmt = $db->prepare("
+        SELECT id_joueur, id_poste, role
+        FROM participation
+        WHERE id_match = ?
+    ");
+    $stmt->execute([$id_match]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Statistiques synthétiques d'un joueur sur les matchs joués
+function getPlayerMatchStats(PDO $db, int $id_joueur): array {
+    $stmt = $db->prepare("
+        SELECT 
+            COUNT(*) as total_matchs,
+            SUM(CASE WHEN p.role = 'TITULAIRE' THEN 1 ELSE 0 END) as matchs_titulaire,
+            SUM(CASE WHEN p.role = 'REMPLACANT' THEN 1 ELSE 0 END) as matchs_remplacant,
+            AVG(p.evaluation) as moyenne_evaluation,
+            COUNT(p.evaluation) as matchs_evalues,
+            MIN(p.evaluation) as min_evaluation,
+            MAX(p.evaluation) as max_evaluation
+        FROM participation p
+        INNER JOIN matchs m ON p.id_match = m.id_match
+        WHERE p.id_joueur = ? AND m.etat = 'JOUE'
+    ");
+    $stmt->execute([$id_joueur]);
+    return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+}
+
+// Historique des matchs pour un joueur
+function getPlayerMatchHistory(PDO $db, int $id_joueur): array {
+    $stmt = $db->prepare("
+        SELECT 
+            m.*,
+            p.id_poste,
+            po.libelle as poste_libelle,
+            p.role,
+            p.evaluation,
+            CASE 
+                WHEN m.resultat = 'VICTOIRE' THEN 'victoire'
+                WHEN m.resultat = 'DEFAITE' THEN 'defaite'
+                WHEN m.resultat = 'NUL' THEN 'nul'
+                ELSE 'indetermine'
+            END as resultat_class
+        FROM participation p
+        INNER JOIN matchs m ON p.id_match = m.id_match
+        LEFT JOIN poste po ON p.id_poste = po.id_poste
+        WHERE p.id_joueur = ?
+        ORDER BY m.date_heure DESC
+    ");
+    $stmt->execute([$id_joueur]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Répartition des postes pour un joueur
+function getPlayerPosteDistribution(PDO $db, int $id_joueur): array {
+    $stmt = $db->prepare("
+        SELECT 
+            po.libelle as poste,
+            COUNT(*) as nb_matchs,
+            ROUND(AVG(p.evaluation), 2) as moyenne_eval
+        FROM participation p
+        LEFT JOIN poste po ON p.id_poste = po.id_poste
+        WHERE p.id_joueur = ?
+        GROUP BY p.id_poste, po.libelle
+        ORDER BY nb_matchs DESC
+    ");
+    $stmt->execute([$id_joueur]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Participants d'un match pour l'évaluation
+function getMatchParticipantsForEvaluation(PDO $db, int $id_match): array {
+    $stmt = $db->prepare("
+        SELECT 
+            p.id_joueur,
+            p.role,
+            p.evaluation,
+            j.nom,
+            j.prenom,
+            j.num_licence,
+            po.libelle AS poste,
+            s.code as statut_code,
+            s.libelle as statut_libelle
+        FROM participation p
+        JOIN joueur j ON j.id_joueur = p.id_joueur
+        LEFT JOIN poste po ON po.id_poste = p.id_poste
+        LEFT JOIN statut s ON j.id_statut = s.id_statut
+        WHERE p.id_match = ?
+        ORDER BY 
+            CASE p.role 
+                WHEN 'TITULAIRE' THEN 1 
+                WHEN 'REMPLACANT' THEN 2 
+                ELSE 3 
+            END,
+            po.libelle
+    ");
+    $stmt->execute([$id_match]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 
 /**************************************************************
  * 2️⃣ Ajouter une participation

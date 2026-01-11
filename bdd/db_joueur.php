@@ -27,6 +27,23 @@ function getPlayerById(PDO $db, int $id) {
     return $stmt->fetch(); 
 }
 
+// Récupérer un joueur avec statut et âge
+function getPlayerProfile(PDO $db, int $id_joueur): ?array {
+    $stmt = $db->prepare("
+        SELECT 
+            j.*,
+            s.code as statut_code,
+            s.libelle as statut_libelle,
+            YEAR(CURDATE()) - YEAR(date_naissance) - (DATE_FORMAT(CURDATE(), '%m%d') < DATE_FORMAT(date_naissance, '%m%d')) as age
+        FROM joueur j
+        LEFT JOIN statut s ON j.id_statut = s.id_statut
+        WHERE j.id_joueur = ?
+    ");
+    $stmt->execute([$id_joueur]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
 // Récupérer tous les statuts possibles
 function getAllStatuts(PDO $db) {
     $stmt = $db->query("SELECT * FROM statut ORDER BY libelle");
@@ -42,6 +59,18 @@ function getActivePlayers(PDO $db) {
             ORDER BY j.nom, j.prenom";
     $stmt = $db->query($sql);
     return $stmt->fetchAll();
+}
+
+// Récupérer les joueurs actifs avec infos nécessaires à la feuille de match
+function getActivePlayersDetailed(PDO $db): array {
+    $sql = "
+        SELECT j.id_joueur, j.nom, j.prenom, j.num_licence, j.taille_cm, j.poids_kg, s.code AS statut
+        FROM joueur j
+        JOIN statut s ON s.id_statut = j.id_statut
+        WHERE s.code = 'ACT'
+        ORDER BY j.nom, j.prenom
+    ";
+    return $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 }
 
 
