@@ -23,25 +23,10 @@ if (!$match) {
 }
 
 // Récupérer les statistiques du match
-$stmt = $gestion_sportive->prepare("
-    SELECT 
-        COUNT(*) as nb_joueurs,
-        AVG(evaluation) as moyenne_eval
-    FROM participation 
-    WHERE id_match = ?
-");
-$stmt->execute([$id_match]);
-$stats_match = $stmt->fetch(PDO::FETCH_ASSOC);
+$stats_match = getMatchStatsSummary($gestion_sportive, $id_match);
 
 // Récupérer les adversaires existants pour l'autocomplete
-$stmt = $gestion_sportive->query("
-    SELECT DISTINCT adversaire 
-    FROM matchs 
-    WHERE adversaire IS NOT NULL 
-    AND adversaire != '' 
-    ORDER BY adversaire
-");
-$adversaires_existants = $stmt->fetchAll(PDO::FETCH_COLUMN);
+$adversaires_existants = getDistinctAdversaires($gestion_sportive);
 
 include "../includes/header.php";
 ?>

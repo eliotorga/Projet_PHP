@@ -164,7 +164,7 @@ function clearParticipation(PDO $db, int $id_match) {
 /**************************************************************
  * 4️⃣ Mettre à jour une évaluation
  **************************************************************/
-function updateEvaluation(PDO $db, int $id_match, int $id_joueur, int $note) {
+function updateEvaluation(PDO $db, int $id_match, int $id_joueur, ?int $note) {
 
     $sql = "
         UPDATE participation

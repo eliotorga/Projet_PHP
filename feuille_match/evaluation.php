@@ -82,28 +82,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if (empty($errors)) {
         try {
             $gestion_sportive->beginTransaction();
-            
+
             /* Mise à jour du match */
-            $stmt = $gestion_sportive->prepare("
-                UPDATE matchs
-                SET resultat = ?, 
-                    score_equipe = ?, 
-                    score_adverse = ?,
-                    etat = 'JOUE'
-                WHERE id_match = ?
-            ");
-            $stmt->execute([$resultat, $score_equipe, $score_adverse, $id_match]);
+            setMatchResult($gestion_sportive, $id_match, $score_equipe, $score_adverse);
 
             /* Mise à jour des évaluations */
-            $stmtEval = $gestion_sportive->prepare("
-                UPDATE participation
-                SET evaluation = ?
-                WHERE id_match = ? AND id_joueur = ?
-            ");
-
             foreach ($evaluations as $id_joueur => $note) {
                 $note_value = $note !== "" ? (int)$note : null;
-                $stmtEval->execute([$note_value, $id_match, (int)$id_joueur]);
+                updateEvaluation($gestion_sportive, $id_match, (int)$id_joueur, $note_value);
             }
             
             $gestion_sportive->commit();

@@ -4,6 +4,8 @@
 
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
+require_once __DIR__ . "/../bdd/db_joueur.php";
+require_once __DIR__ . "/../bdd/db_participation.php";
 
 // Vérifier si l'ID du joueur est passé en paramètre
 if (!isset($_GET['id']) || empty($_GET['id'])) {
@@ -14,19 +16,7 @@ if (!isset($_GET['id']) || empty($_GET['id'])) {
 $id_joueur = intval($_GET['id']);
 
 // Récupérer les informations du joueur
-$stmt = $gestion_sportive->prepare("
-    SELECT 
-        j.*,
-        s.code as statut_code,
-        s.libelle as statut_libelle,
-        YEAR(CURDATE()) - YEAR(date_naissance) - (DATE_FORMAT(CURDATE(), '%m%d') < DATE_FORMAT(date_naissance, '%m%d')) as age
-    FROM joueur j
-    LEFT JOIN statut s ON j.id_statut = s.id_statut
-    WHERE j.id_joueur = ?
-");
-
-$stmt->execute([$id_joueur]);
-$joueur = $stmt->fetch(PDO::FETCH_ASSOC);
+$joueur = getPlayerProfile($gestion_sportive, $id_joueur);
 
 if (!$joueur) {
     $_SESSION['error_message'] = "Joueur non trouvé.";
@@ -35,73 +25,16 @@ if (!$joueur) {
 }
 
 // Récupérer les statistiques des matchs du joueur
-$stmt = $gestion_sportive->prepare("
-    SELECT 
-        COUNT(*) as total_matchs,
-        SUM(CASE WHEN p.role = 'TITULAIRE' THEN 1 ELSE 0 END) as matchs_titulaire,
-        SUM(CASE WHEN p.role = 'REMPLACANT' THEN 1 ELSE 0 END) as matchs_remplacant,
-        AVG(p.evaluation) as moyenne_evaluation,
-        COUNT(p.evaluation) as matchs_evalues,
-        MIN(p.evaluation) as min_evaluation,
-        MAX(p.evaluation) as max_evaluation
-    FROM participation p
-    INNER JOIN matchs m ON p.id_match = m.id_match
-    WHERE p.id_joueur = ? AND m.etat = 'JOUE'
-");
-
-$stmt->execute([$id_joueur]);
-$stats = $stmt->fetch(PDO::FETCH_ASSOC);
+$stats = getPlayerMatchStats($gestion_sportive, $id_joueur);
 
 // Récupérer l'historique des matchs du joueur
-$stmt = $gestion_sportive->prepare("
-    SELECT 
-        m.*,
-        p.id_poste,
-        po.libelle as poste_libelle,
-        p.role,
-        p.evaluation,
-        CASE 
-            WHEN m.resultat = 'VICTOIRE' THEN 'victoire'
-            WHEN m.resultat = 'DEFAITE' THEN 'defaite'
-            WHEN m.resultat = 'NUL' THEN 'nul'
-            ELSE 'indetermine'
-        END as resultat_class
-    FROM participation p
-    INNER JOIN matchs m ON p.id_match = m.id_match
-    LEFT JOIN poste po ON p.id_poste = po.id_poste
-    WHERE p.id_joueur = ?
-    ORDER BY m.date_heure DESC
-");
-
-$stmt->execute([$id_joueur]);
-$matchs_joueur = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$matchs_joueur = getPlayerMatchHistory($gestion_sportive, $id_joueur);
 
 // Récupérer les commentaires du joueur
-$stmt = $gestion_sportive->prepare("
-    SELECT *
-    FROM commentaire
-    WHERE id_joueur = ?
-    ORDER BY date_commentaire DESC
-");
-
-$stmt->execute([$id_joueur]);
-$commentaires = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$commentaires = getComments($gestion_sportive, $id_joueur);
 
 // Récupérer la répartition des postes
-$stmt = $gestion_sportive->prepare("
-    SELECT 
-        po.libelle as poste,
-        COUNT(*) as nb_matchs,
-        ROUND(AVG(p.evaluation), 2) as moyenne_eval
-    FROM participation p
-    LEFT JOIN poste po ON p.id_poste = po.id_poste
-    WHERE p.id_joueur = ?
-    GROUP BY p.id_poste, po.libelle
-    ORDER BY nb_matchs DESC
-");
-
-$stmt->execute([$id_joueur]);
-$postes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$postes = getPlayerPosteDistribution($gestion_sportive, $id_joueur);
 
 include "../includes/header.php";
 ?>
