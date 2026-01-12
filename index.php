@@ -156,7 +156,7 @@ include "includes/header.php";
                             </div>
                             <div>
                                 <div class="action-title">Prochain Match</div>
-                                <div style="opacity: 0.8; font-size: 0.9rem;">Préparez votre équipe</div>
+                                <div class="action-subtitle">Préparez votre équipe</div>
                             </div>
                         </div>
                         
@@ -165,24 +165,24 @@ include "includes/header.php";
                                 <div class="match-info">
                                     <i class="fas fa-flag"></i>
                                     <div>
-                                        <div style="font-weight: 600; font-size: 1.3rem;"><?= htmlspecialchars($prochainMatch["adversaire"]) ?></div>
-                                        <div style="opacity: 0.8;"><?= $prochainMatch['lieu'] === 'DOMICILE' ? 'Match à domicile' : 'Match à l\'extérieur' ?></div>
+                                        <div class="match-title"><?= htmlspecialchars($prochainMatch["adversaire"]) ?></div>
+                                        <div class="match-subtitle"><?= $prochainMatch['lieu'] === 'DOMICILE' ? 'Match à domicile' : 'Match à l\'extérieur' ?></div>
                                     </div>
                                 </div>
                                 
                                 <div class="match-info">
                                     <i class="fas fa-calendar-alt"></i>
                                     <div>
-                                        <div style="font-weight: 600;"><?= date("l d F Y", strtotime($prochainMatch["date_heure"])) ?></div>
-                                        <div style="opacity: 0.8;">À <?= date("H:i", strtotime($prochainMatch["date_heure"])) ?></div>
+                                        <div class="match-date"><?= date("l d F Y", strtotime($prochainMatch["date_heure"])) ?></div>
+                                        <div class="match-time">À <?= date("H:i", strtotime($prochainMatch["date_heure"])) ?></div>
                                     </div>
                                 </div>
                                 
                                 <div class="match-info">
                                     <i class="fas fa-users"></i>
                                     <div>
-                                        <div style="font-weight: 600;"><?= $prochainMatch['nb_joueurs'] ?> joueurs sélectionnés</div>
-                                        <div style="opacity: 0.8;"><?= 11 - $prochainMatch['nb_joueurs'] ?> places restantes</div>
+                                        <div class="match-meta"><?= $prochainMatch['nb_joueurs'] ?> joueurs sélectionnés</div>
+                                        <div class="match-subtitle"><?= 11 - $prochainMatch['nb_joueurs'] ?> places restantes</div>
                                     </div>
                                 </div>
                             </div>
@@ -192,10 +192,10 @@ include "includes/header.php";
                                 <i class="fas fa-futbol"></i> Composer l'équipe
                             </a>
                         <?php else: ?>
-                            <div class="action-details" style="text-align: center; padding: 30px 0;">
-                                <i class="fas fa-calendar-plus" style="font-size: 4rem; opacity: 0.3; margin-bottom: 20px;"></i>
-                                <div style="font-size: 1.2rem; margin-bottom: 10px;">Aucun match à venir</div>
-                                <p style="opacity: 0.8; margin-bottom: 20px;">Planifiez un nouveau match pour commencer la préparation.</p>
+                            <div class="action-details empty-state">
+                                <i class="fas fa-calendar-plus empty-icon"></i>
+                                <div class="empty-title">Aucun match à venir</div>
+                                <p class="empty-text">Planifiez un nouveau match pour commencer la préparation.</p>
                                 <a href="matchs/ajouter_match.php" class="btn-action">
                                     <i class="fas fa-plus-circle"></i> Ajouter un match
                                 </a>
@@ -213,31 +213,32 @@ include "includes/header.php";
                             </div>
                             <div>
                                 <div class="action-title">Dernier Match</div>
-                                <div style="opacity: 0.8; font-size: 0.9rem;">Analyse et évaluation</div>
+                                <div class="action-subtitle">Analyse et évaluation</div>
                             </div>
                         </div>
                         
                         <?php if ($dernierMatch): ?>
+                            <?php
+                                $result_class = $dernierMatch['resultat'] === 'VICTOIRE' ? 'result--win' :
+                                    ($dernierMatch['resultat'] === 'NUL' ? 'result--draw' : 'result--loss');
+                            ?>
                             <div class="action-details">
                                 <div class="match-info">
                                     <i class="fas fa-flag"></i>
                                     <div>
-                                        <div style="font-weight: 600; font-size: 1.3rem;"><?= htmlspecialchars($dernierMatch["adversaire"]) ?></div>
-                                        <div style="opacity: 0.8;"><?= date("d/m/Y H:i", strtotime($dernierMatch["date_heure"])) ?></div>
+                                        <div class="match-title"><?= htmlspecialchars($dernierMatch["adversaire"]) ?></div>
+                                        <div class="match-subtitle"><?= date("d/m/Y H:i", strtotime($dernierMatch["date_heure"])) ?></div>
                                     </div>
                                 </div>
                                 
                                 <div class="match-info">
                                     <i class="fas fa-chart-line"></i>
-                                    <div style="flex: 1;">
-                                        <div style="font-weight: 600;">Résultat : 
-                                            <span style="color: <?= $dernierMatch['resultat'] === 'VICTOIRE' ? 'var(--secondary)' : 
-                                                                ($dernierMatch['resultat'] === 'NUL' ? 'var(--accent)' : 'var(--danger)') ?>">
-                                                <?= $dernierMatch['resultat'] ?>
-                                            </span>
+                                    <div class="match-grow">
+                                        <div class="result-text">Résultat : 
+                                            <span class="result-tag <?= $result_class ?>"><?= $dernierMatch['resultat'] ?></span>
                                         </div>
                                         <?php if ($dernierMatch['score_equipe'] !== null): ?>
-                                            <div style="opacity: 0.8;">Score : <?= $dernierMatch['score_equipe'] ?> - <?= $dernierMatch['score_adverse'] ?></div>
+                                            <div class="match-subtitle">Score : <?= $dernierMatch['score_equipe'] ?> - <?= $dernierMatch['score_adverse'] ?></div>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -246,14 +247,14 @@ include "includes/header.php";
                                     <div class="match-info">
                                         <i class="fas fa-star"></i>
                                         <div>
-                                            <div style="font-weight: 600;">Évaluation moyenne : <?= $dernierMatch['moyenne_eval'] ?>/5</div>
-                                            <div style="opacity: 0.8;">Performance de l'équipe</div>
+                                            <div class="match-meta">Évaluation moyenne : <?= $dernierMatch['moyenne_eval'] ?>/5</div>
+                                            <div class="match-subtitle">Performance de l'équipe</div>
                                         </div>
                                     </div>
                                 <?php endif; ?>
                             </div>
                             
-                            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                            <div class="action-cta-row">
                                 <a href="feuille_match/evaluation.php?id_match=<?= $dernierMatch["id_match"] ?>" 
                                    class="btn-action btn-warning">
                                     <i class="fas fa-star"></i> Évaluer les joueurs
@@ -264,10 +265,10 @@ include "includes/header.php";
                                 </a>
                             </div>
                         <?php else: ?>
-                            <div class="action-details" style="text-align: center; padding: 30px 0;">
-                                <i class="fas fa-futbol" style="font-size: 4rem; opacity: 0.3; margin-bottom: 20px;"></i>
-                                <div style="font-size: 1.2rem; margin-bottom: 10px;">Aucun match joué</div>
-                                <p style="opacity: 0.8;">Les statistiques s'afficheront après votre premier match.</p>
+                            <div class="action-details empty-state">
+                                <i class="fas fa-futbol empty-icon"></i>
+                                <div class="empty-title">Aucun match joué</div>
+                                <p class="empty-text">Les statistiques s'afficheront après votre premier match.</p>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -277,7 +278,7 @@ include "includes/header.php";
             <!-- COLONNE DROITE -->
             <div class="right-column">
                 <!-- ACTIVITÉS RÉCENTES -->
-                <div class="activities-card" style="margin-top: 30px;">
+                <div class="activities-card activities-card--spaced">
                     <div class="activities-header">
                         <i class="fas fa-history"></i>
                         <h3>Activités Récentes</h3>
@@ -286,6 +287,10 @@ include "includes/header.php";
                     <div class="activity-list">
                         <?php if (!empty($dernieres_activites)): ?>
                             <?php foreach ($dernieres_activites as $activite): ?>
+                                <?php
+                                    $activity_class = $activite['resultat'] === 'VICTOIRE' ? 'result--win' :
+                                        ($activite['resultat'] === 'NUL' ? 'result--draw' : 'result--loss');
+                                ?>
                                 <div class="activity-item">
                                     <div class="activity-icon">
                                         <i class="fas fa-futbol"></i>
@@ -294,19 +299,16 @@ include "includes/header.php";
                                         <div class="activity-title"><?= htmlspecialchars($activite['adversaire']) ?></div>
                                         <div class="activity-meta">
                                             <span><?= date("d/m/Y", strtotime($activite['date_heure'])) ?></span>
-                                            <span style="color: <?= $activite['resultat'] === 'VICTOIRE' ? 'var(--secondary)' : 
-                                                                ($activite['resultat'] === 'NUL' ? 'var(--accent)' : 'var(--danger)') ?>">
-                                                <?= $activite['resultat'] ?>
-                                            </span>
+                                            <span class="result-tag <?= $activity_class ?>"><?= $activite['resultat'] ?></span>
                                             <span><?= $activite['nb_participants'] ?> joueurs</span>
                                         </div>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <div style="text-align: center; padding: 20px 0; opacity: 0.6;">
-                                <i class="fas fa-calendar-times" style="font-size: 2rem; margin-bottom: 10px;"></i>
-                                <div>Aucune activité récente</div>
+                            <div class="empty-state empty-state--compact">
+                                <i class="fas fa-calendar-times empty-icon empty-icon--compact"></i>
+                                <div class="empty-title empty-title--compact">Aucune activité récente</div>
                             </div>
                         <?php endif; ?>
                     </div>
