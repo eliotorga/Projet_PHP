@@ -62,6 +62,23 @@ include "includes/header.php";
                 <div class="hero-text">
                     <h1><i class="fas fa-tachometer-alt"></i> Dashboard Entraîneur</h1>
                     <p>Pilotez votre équipe avec précision : matchs, joueurs, performances et statistiques en temps réel.</p>
+                    <div class="hero-actions">
+                        <?php if ($prochainMatch): ?>
+                            <a class="btn-hero" href="feuille_match/composition.php?id_match=<?= $prochainMatch["id_match"] ?>">
+                                <i class="fas fa-futbol"></i> Composer l'équipe
+                            </a>
+                            <a class="btn-hero btn-ghost" href="matchs/liste_matchs.php">
+                                <i class="fas fa-calendar-alt"></i> Voir le calendrier
+                            </a>
+                        <?php else: ?>
+                            <a class="btn-hero" href="matchs/ajouter_match.php">
+                                <i class="fas fa-plus-circle"></i> Planifier un match
+                            </a>
+                            <a class="btn-hero btn-ghost" href="matchs/liste_matchs.php">
+                                <i class="fas fa-calendar-alt"></i> Voir le calendrier
+                            </a>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 <div class="hero-stats">
                     <div class="hero-stat">
