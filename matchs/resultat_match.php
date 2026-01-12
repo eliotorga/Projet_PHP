@@ -87,3 +87,4 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/resultats.css">
 <link rel="stylesheet" href="../assets/css/feuille_match.css">
+    <link rel="stylesheet" href="/Projet_PHP/assets/css/theme.css">

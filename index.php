@@ -103,6 +103,9 @@ $dernierMatch = $gestion_sportive->query("
     LIMIT 1
 ")->fetch(PDO::FETCH_ASSOC);
 
+$css_version = @filemtime(__DIR__ . "/assets/css/index.css") ?: time();
+$theme_version = @filemtime(__DIR__ . "/assets/css/theme.css") ?: time();
+
 include "includes/header.php";
 ?>
 
@@ -114,7 +117,8 @@ include "includes/header.php";
     <title>Tableau de Bord - Gestion Équipe</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/Projet_PHP/assets/css/index.css">
+    <link rel="stylesheet" href="/Projet_PHP/assets/css/index.css?v=<?= $css_version ?>">
+    <link rel="stylesheet" href="/Projet_PHP/assets/css/theme.css?v=<?= $theme_version ?>">
 </head>
 <body>
     <div class="dashboard-container">

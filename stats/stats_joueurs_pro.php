@@ -155,6 +155,7 @@ function sortLink($col, $label, $currentSort, $currentOrder) {
 ?>
 
 <link rel="stylesheet" href="../assets/css/stats_joueurs_pro.css">
+    <link rel="stylesheet" href="/Projet_PHP/assets/css/theme.css">
 
 <h2>📊 Statistiques de l’équipe</h2>
 

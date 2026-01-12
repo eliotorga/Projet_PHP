@@ -40,6 +40,7 @@ include "../includes/header.php";
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/modifier_match.css">
+    <link rel="stylesheet" href="/Projet_PHP/assets/css/theme.css">
     <!-- Styles déplacés vers modifier_match.css
     <style>
     :root {
