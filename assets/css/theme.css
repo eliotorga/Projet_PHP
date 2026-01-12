@@ -27,6 +27,7 @@
     --shadow-md: 0 10px 24px rgba(0, 0, 0, 0.12);
 
     --radius: 16px;
+    --transition-fast: 0.15s ease;
     --transition: all 0.3s ease;
 
     --font-family: "Montserrat", "Segoe UI", Arial, sans-serif;
@@ -145,4 +146,92 @@ body .players-list::-webkit-scrollbar-track {
 
 body .players-list::-webkit-scrollbar-thumb {
     background: var(--primary) !important;
+}
+
+/* Unified buttons */
+body :where(.btn, .btn-primary, .btn-secondary, .btn-outline, .btn-danger, .btn-warning,
+    .btn-submit, .btn-reset, .btn-cancel, .btn-login, .btn-add-player, .btn-add-match,
+    .btn-filter, .btn-quick, .btn-hero, .btn-save, .btn-select-all, .btn-deselect-all,
+    .btn-delete-selected, .btn-modal-confirm, .btn-modal-cancel, .btn-ghost, .logout) {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: var(--transition-fast);
+    white-space: nowrap;
+}
+
+body :where(.btn, .btn-primary, .btn-secondary, .btn-outline, .btn-danger, .btn-warning,
+    .btn-submit, .btn-reset, .btn-cancel, .btn-login, .btn-add-player, .btn-add-match,
+    .btn-filter, .btn-quick, .btn-hero, .btn-save, .btn-select-all, .btn-deselect-all,
+    .btn-delete-selected, .btn-modal-confirm, .btn-modal-cancel, .btn-ghost, .logout):focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(30, 122, 60, 0.18);
+}
+
+body :where(.btn-primary, .btn-submit, .btn-add-player, .btn-add-match, .btn-hero, .btn-login, .btn-save, .btn-quick) {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: #ffffff;
+    border-color: rgba(30, 122, 60, 0.35);
+    box-shadow: var(--shadow-sm);
+}
+
+body :where(.btn-primary:hover, .btn-submit:hover, .btn-add-player:hover, .btn-add-match:hover,
+    .btn-hero:hover, .btn-login:hover, .btn-save:hover, .btn-quick:hover) {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+body :where(.btn-secondary, .btn-reset, .btn-cancel, .btn-ghost, .btn-back, .btn-select-all,
+    .btn-deselect-all, .btn-modal-cancel, .logout) {
+    background: #ffffff;
+    color: var(--text-primary);
+    border-color: var(--gray-300);
+}
+
+body :where(.btn-secondary:hover, .btn-reset:hover, .btn-cancel:hover, .btn-ghost:hover, .btn-back:hover,
+    .btn-select-all:hover, .btn-deselect-all:hover, .btn-modal-cancel:hover, .logout:hover) {
+    border-color: rgba(30, 122, 60, 0.35);
+    box-shadow: var(--shadow-sm);
+}
+
+body :where(.btn-warning, .btn-filter) {
+    background: linear-gradient(135deg, var(--warning), #e67e22);
+    color: #ffffff;
+    border-color: rgba(243, 156, 18, 0.35);
+    box-shadow: var(--shadow-sm);
+}
+
+body :where(.btn-warning:hover, .btn-filter:hover) {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+body :where(.btn-danger, .btn-delete-selected, .btn-modal-confirm) {
+    background: linear-gradient(135deg, var(--danger), #c0392b);
+    color: #ffffff;
+    border-color: rgba(231, 76, 60, 0.35);
+    box-shadow: var(--shadow-sm);
+}
+
+body :where(.btn-danger:hover, .btn-delete-selected:hover, .btn-modal-confirm:hover) {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+body :where(.btn-outline) {
+    background: transparent;
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+body :where(.btn-outline:hover) {
+    background: var(--primary);
+    color: #ffffff;
 }

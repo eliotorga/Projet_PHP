@@ -70,25 +70,6 @@
         max-width: 600px;
     }
 
-    .btn-add-match {
-        background: linear-gradient(135deg, var(--secondary), #27ae60);
-        color: white;
-        padding: 14px 28px;
-        border-radius: 50px;
-        text-decoration: none;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        transition: var(--transition);
-        box-shadow: var(--shadow);
-    }
-
-    .btn-add-match:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 15px 30px rgba(46, 204, 113, 0.3);
-    }
-
     /* =============================
        FILTRES
     ============================= */
@@ -131,25 +112,6 @@
         outline: none;
         border-color: var(--secondary);
         box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.1);
-    }
-
-    .btn-filter {
-        background: var(--info);
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        transition: var(--transition);
-        align-self: flex-end;
-    }
-
-    .btn-filter:hover {
-        background: #2980b9;
     }
 
     /* =============================

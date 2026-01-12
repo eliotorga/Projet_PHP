@@ -662,26 +662,6 @@ body {
     transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.btn-save {
-    background: linear-gradient(135deg, var(--primary), var(--primary-light, #2ecc71));
-    color: #ffffff;
-    border-color: rgba(30, 122, 60, 0.4);
-}
-
-.btn-save:hover {
-    box-shadow: 0 10px 24px rgba(46, 204, 113, 0.25);
-}
-
-.btn-reset {
-    background: var(--comp-card);
-    color: var(--comp-text);
-    border-color: var(--comp-border);
-}
-
-.btn-reset:hover {
-    border-color: rgba(30, 122, 60, 0.35);
-}
-
 .btn-action:focus-visible {
     outline: none;
     box-shadow: 0 0 0 3px var(--comp-focus);

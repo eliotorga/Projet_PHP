@@ -184,63 +184,6 @@
         flex-wrap: wrap;
     }
 
-    .btn {
-        padding: 12px 24px;
-        border-radius: 50px;
-        font-weight: 600;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        transition: var(--transition);
-        cursor: pointer;
-        border: none;
-        font-size: 0.95rem;
-    }
-
-    .btn-select-all {
-        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-        color: var(--dark);
-        border: 2px solid #dee2e6;
-    }
-
-    .btn-select-all:hover {
-        background: linear-gradient(135deg, #e9ecef, #dee2e6);
-        transform: translateY(-2px);
-    }
-
-    .btn-deselect-all {
-        background: linear-gradient(135deg, #f1f8e9, #dcedc8);
-        color: #689f38;
-        border: 2px solid #c5e1a5;
-    }
-
-    .btn-deselect-all:hover {
-        background: linear-gradient(135deg, #dcedc8, #c5e1a5);
-        transform: translateY(-2px);
-    }
-
-    .btn-delete-selected {
-        background: linear-gradient(135deg, var(--danger), var(--danger-dark));
-        color: white;
-    }
-
-    .btn-delete-selected:hover {
-        background: linear-gradient(135deg, var(--danger-dark), #a93226);
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(231, 76, 60, 0.3);
-    }
-
-    .btn-cancel {
-        background: linear-gradient(135deg, #95a5a6, #7f8c8d);
-        color: white;
-    }
-
-    .btn-cancel:hover {
-        background: linear-gradient(135deg, #7f8c8d, #6c7b7d);
-        transform: translateY(-2px);
-    }
-
     /* =============================
        TABLE DES JOUEURS
     ============================= */
@@ -488,21 +431,6 @@
         display: flex;
         justify-content: flex-end;
         gap: 10px;
-    }
-
-    .btn-modal-cancel {
-        background: #95a5a6;
-        color: white;
-    }
-
-    .btn-modal-confirm {
-        background: linear-gradient(135deg, var(--danger), var(--danger-dark));
-        color: white;
-    }
-
-    .btn-modal-cancel:hover,
-    .btn-modal-confirm:hover {
-        transform: translateY(-2px);
     }
 
     /* =============================

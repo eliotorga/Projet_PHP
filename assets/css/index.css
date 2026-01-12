@@ -135,65 +135,11 @@
         margin-top: 18px;
     }
 
-    .btn-hero {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 22px;
-        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-        color: #ffffff;
-        text-decoration: none;
-        border-radius: 50px;
-        font-weight: 600;
-        font-size: 1rem;
-        transition: var(--transition);
-        box-shadow: 0 10px 20px rgba(30, 122, 60, 0.2);
-    }
-
-    .btn-hero:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 14px 24px rgba(30, 122, 60, 0.25);
-    }
-
-    .btn-hero.btn-ghost {
-        background: #ffffff;
-        color: var(--primary);
-        border: 1px solid #e6edf3;
-        box-shadow: none;
-    }
-
     .hero-actions {
         display: flex;
         gap: 12px;
         flex-wrap: wrap;
         margin-top: 18px;
-    }
-
-    .btn-hero {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 22px;
-        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-        color: #ffffff;
-        text-decoration: none;
-        border-radius: 50px;
-        font-weight: 600;
-        font-size: 1rem;
-        transition: var(--transition);
-        box-shadow: 0 10px 20px rgba(30, 122, 60, 0.2);
-    }
-
-    .btn-hero:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 14px 24px rgba(30, 122, 60, 0.25);
-    }
-
-    .btn-hero.btn-ghost {
-        background: #ffffff;
-        color: var(--primary);
-        border: 1px solid #e6edf3;
-        box-shadow: none;
     }
 
     .hero-stats {
@@ -746,26 +692,6 @@
         font-size: 0.9rem;
         color: var(--gray);
         margin-bottom: 15px;
-    }
-
-    .btn-quick {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 20px;
-        background: linear-gradient(135deg, var(--secondary), #27ae60);
-        color: white;
-        text-decoration: none;
-        border-radius: 50px;
-        font-weight: 600;
-        font-size: 0.9rem;
-        transition: var(--transition);
-        width: fit-content;
-    }
-
-    .btn-quick:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(46, 204, 113, 0.3);
     }
 
     .toast-warning {

@@ -255,50 +255,6 @@
         flex-wrap: wrap;
     }
 
-    .btn {
-        padding: 15px 30px;
-        border-radius: 50px;
-        font-weight: 600;
-        font-size: 1rem;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        transition: var(--transition);
-        cursor: pointer;
-        border: none;
-    }
-
-    .btn-submit {
-        background: linear-gradient(135deg, var(--secondary), #27ae60);
-        color: white;
-    }
-
-    .btn-submit:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 25px rgba(46, 204, 113, 0.3);
-    }
-
-    .btn-reset {
-        background: linear-gradient(135deg, #f39c12, #e67e22);
-        color: white;
-    }
-
-    .btn-reset:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 25px rgba(243, 156, 18, 0.3);
-    }
-
-    .btn-cancel {
-        background: linear-gradient(135deg, #95a5a6, #7f8c8d);
-        color: white;
-    }
-
-    .btn-cancel:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 25px rgba(149, 165, 166, 0.3);
-    }
-
     /* =============================
        ANIMATIONS
     ============================= */
