@@ -367,7 +367,6 @@ include "includes/header.php";
     <?php if ($prochainMatch && (strtotime($prochainMatch['date_heure']) - time()) < 86400): ?>
         <div class="toast-warning">
             <i class="fas fa-exclamation-triangle"></i>
-            <span>⚠️ Match imminent demain ! Pensez à finaliser votre composition.</span>
         </div>
     <?php endif; ?>
 </body>
