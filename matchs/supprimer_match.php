@@ -4,6 +4,8 @@
 
 require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";
+require_once __DIR__ . "/../bdd/db_match.php";
+require_once __DIR__ . "/../bdd/db_participation.php";
 
 // =====================
 // SUPPRESSION DIRECTE
@@ -15,12 +17,10 @@ if (isset($_GET['id'])) {
         $gestion_sportive->beginTransaction();
         
         // 1. Supprimer les participations
-        $stmt = $gestion_sportive->prepare("DELETE FROM participation WHERE id_match = ?");
-        $stmt->execute([$id_match]);
+        clearParticipation($gestion_sportive, $id_match);
         
         // 2. Supprimer le match
-        $stmt = $gestion_sportive->prepare("DELETE FROM matchs WHERE id_match = ?");
-        $stmt->execute([$id_match]);
+        deleteMatch($gestion_sportive, $id_match);
         
         $gestion_sportive->commit();
         
@@ -44,23 +44,7 @@ $message = "";
 $error = "";
 
 // Récupérer tous les matchs avec leurs statistiques
-$matchs = $gestion_sportive->query("
-    SELECT 
-        m.id_match,
-        m.date_heure,
-        m.adversaire,
-        m.lieu,
-        m.score_equipe,
-        m.score_adverse,
-        m.resultat,
-        m.etat,
-        COUNT(DISTINCT p.id_joueur) AS nb_participants,
-        ROUND(AVG(p.evaluation), 1) AS note_moyenne
-    FROM matchs m
-    LEFT JOIN participation p ON p.id_match = m.id_match
-    GROUP BY m.id_match
-    ORDER BY m.date_heure DESC
-")->fetchAll(PDO::FETCH_ASSOC);
+$matchs = getMatchesWithDeleteStats($gestion_sportive);
 
 $select_all = isset($_GET['select_all']) ? intval($_GET['select_all']) : 0;
 $show_confirmation = false;
@@ -77,22 +61,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $matchs_supprimes = [];
             $matchs_avec_participations = 0;
             foreach ($ids_matchs as $id_match) {
-                $stmt = $gestion_sportive->prepare("SELECT adversaire, date_heure FROM matchs WHERE id_match = ?");
-                $stmt->execute([$id_match]);
-                if ($match_info = $stmt->fetch()) {
+                $match_info = getMatchBasicInfo($gestion_sportive, $id_match);
+                if ($match_info) {
                     $date_format = date("d/m/Y", strtotime($match_info['date_heure']));
                     $matchs_supprimes[] = $match_info['adversaire'] . " (" . $date_format . ")";
                 }
-                $stmt = $gestion_sportive->prepare("SELECT COUNT(*) FROM participation WHERE id_match = ?");
-                $stmt->execute([$id_match]);
-                $nb_participations = $stmt->fetchColumn();
+                $nb_participations = getParticipationCountForMatch($gestion_sportive, $id_match);
                 if ($nb_participations > 0) {
                     $matchs_avec_participations++;
                 }
-                $stmt = $gestion_sportive->prepare("DELETE FROM participation WHERE id_match = ?");
-                $stmt->execute([$id_match]);
-                $stmt = $gestion_sportive->prepare("DELETE FROM matchs WHERE id_match = ?");
-                $stmt->execute([$id_match]);
+                clearParticipation($gestion_sportive, $id_match);
+                deleteMatch($gestion_sportive, $id_match);
             }
             $gestion_sportive->commit();
             if (!empty($matchs_supprimes)) {
@@ -112,9 +91,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if (!empty($_POST['matchs_selectionnes'])) {
             $ids = array_map('intval', $_POST['matchs_selectionnes']);
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
-            $stmt = $gestion_sportive->prepare("SELECT id_match, adversaire, date_heure FROM matchs WHERE id_match IN ($placeholders)");
-            $stmt->execute($ids);
-            $matches_to_confirm = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $matches_to_confirm = getMatchesBasicInfoByIds($gestion_sportive, $ids);
             $show_confirmation = true;
         } else {
             $error = "Veuillez sélectionner au moins un match à supprimer.";

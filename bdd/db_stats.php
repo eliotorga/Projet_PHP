@@ -101,6 +101,116 @@ function getTeamMatchStats(PDO $db): array {
     return $db->query($sql)->fetch(PDO::FETCH_ASSOC) ?: [];
 }
 
+function getMatchStatusCounts(PDO $db): array {
+    $stmt = $db->prepare("
+        SELECT 
+            SUM(CASE WHEN etat IN ('A_PREPARER', 'PREPARE') THEN 1 ELSE 0 END) as a_venir,
+            SUM(CASE WHEN etat = 'JOUE' THEN 1 ELSE 0 END) as joues,
+            COUNT(*) as total
+        FROM matchs
+    ");
+    $stmt->execute();
+    return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+}
+
+function getMatchResultCounts(PDO $db): array {
+    $stmt = $db->prepare("
+        SELECT 
+            SUM(CASE WHEN resultat = 'VICTOIRE' THEN 1 ELSE 0 END) as victoires,
+            SUM(CASE WHEN resultat = 'NUL' THEN 1 ELSE 0 END) as nuls,
+            SUM(CASE WHEN resultat = 'DEFAITE' THEN 1 ELSE 0 END) as defaites,
+            COUNT(*) as total
+        FROM matchs
+        WHERE resultat IS NOT NULL
+    ");
+    $stmt->execute();
+    return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+}
+
+function getAverageEvaluationValue(PDO $db): ?float {
+    $stmt = $db->prepare("
+        SELECT AVG(evaluation) as moyenne
+        FROM participation
+        WHERE evaluation IS NOT NULL
+    ");
+    $stmt->execute();
+    $val = $stmt->fetchColumn();
+    return $val !== false ? (float)$val : null;
+}
+
+function getRecentMatchActivities(PDO $db, int $limit = 3): array {
+    $limit = max(1, (int)$limit);
+    $stmt = $db->prepare("
+        SELECT 
+            m.date_heure,
+            m.adversaire,
+            m.resultat,
+            m.lieu,
+            COUNT(p.id_joueur) as nb_participants
+        FROM matchs m
+        LEFT JOIN participation p ON p.id_match = m.id_match
+        WHERE m.etat = 'JOUE'
+        GROUP BY m.id_match
+        ORDER BY m.date_heure DESC
+        LIMIT ?
+    ");
+    $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getNextMatchSummary(PDO $db): ?array {
+    $stmt = $db->prepare("
+        SELECT 
+            m.id_match,
+            m.date_heure,
+            m.adversaire,
+            m.lieu,
+            COUNT(p.id_joueur) as nb_joueurs
+        FROM matchs m
+        LEFT JOIN participation p ON p.id_match = m.id_match
+        WHERE m.etat IN ('A_PREPARER', 'PREPARE')
+        GROUP BY m.id_match
+        ORDER BY m.date_heure ASC
+        LIMIT 1
+    ");
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+function getLastPlayedMatchSummary(PDO $db): ?array {
+    $stmt = $db->prepare("
+        SELECT 
+            m.id_match,
+            m.date_heure,
+            m.adversaire,
+            m.resultat,
+            m.score_equipe,
+            m.score_adverse,
+            ROUND(AVG(p.evaluation), 1) as moyenne_eval
+        FROM matchs m
+        LEFT JOIN participation p ON p.id_match = m.id_match
+        WHERE m.resultat IS NOT NULL
+        GROUP BY m.id_match
+        ORDER BY m.date_heure DESC
+        LIMIT 1
+    ");
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+function getPlayersBasicList(PDO $db): array {
+    $stmt = $db->prepare("
+        SELECT id_joueur, nom, prenom
+        FROM joueur
+        ORDER BY nom, prenom
+    ");
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 function getAverageEvaluation(PDO $db): ?float {
     $stmt = $db->query("
         SELECT ROUND(AVG(evaluation), 2) as moyenne

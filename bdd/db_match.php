@@ -265,4 +265,55 @@ function getMatchesWithStats(PDO $db, array $filters = []): array {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+// Liste des matchs avec stats (pour suppression)
+function getMatchesWithDeleteStats(PDO $db): array {
+    $stmt = $db->prepare("
+        SELECT 
+            m.id_match,
+            m.date_heure,
+            m.adversaire,
+            m.lieu,
+            m.score_equipe,
+            m.score_adverse,
+            m.resultat,
+            m.etat,
+            COUNT(DISTINCT p.id_joueur) AS nb_participants,
+            ROUND(AVG(p.evaluation), 1) AS note_moyenne
+        FROM matchs m
+        LEFT JOIN participation p ON p.id_match = m.id_match
+        GROUP BY m.id_match
+        ORDER BY m.date_heure DESC
+    ");
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Infos basiques d'un match (pour confirmations)
+function getMatchBasicInfo(PDO $db, int $id_match): ?array {
+    $stmt = $db->prepare("
+        SELECT adversaire, date_heure
+        FROM matchs
+        WHERE id_match = ?
+    ");
+    $stmt->execute([$id_match]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+// Infos basiques de plusieurs matchs
+function getMatchesBasicInfoByIds(PDO $db, array $ids): array {
+    $ids = array_values(array_filter(array_map('intval', $ids)));
+    if (empty($ids)) {
+        return [];
+    }
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $db->prepare("
+        SELECT id_match, adversaire, date_heure
+        FROM matchs
+        WHERE id_match IN ($placeholders)
+    ");
+    $stmt->execute($ids);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 ?>

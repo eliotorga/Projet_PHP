@@ -5,6 +5,7 @@
 require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";
 require_once __DIR__ . "/../bdd/db_joueur.php";
+require_once __DIR__ . "/../bdd/db_participation.php";
 
 // Vérifier qu'un ID a été envoyé
 if (!isset($_GET["id"])) {
@@ -28,14 +29,7 @@ if (!$joueur) {
 $statuts = getAllStatuts($gestion_sportive);
 
 // Récupérer les commentaires du joueur
-$stmt = $gestion_sportive->prepare("
-    SELECT * FROM commentaire 
-    WHERE id_joueur = ? 
-    ORDER BY date_commentaire DESC 
-    LIMIT 5
-");
-$stmt->execute([$id_joueur]);
-$commentaires = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$commentaires = getRecentComments($gestion_sportive, $id_joueur, 5);
 
 // Ajout d'un commentaire
 if ($_SERVER["REQUEST_METHOD"] === "POST" && ($_POST["action"] ?? "") === "add_comment") {
@@ -51,18 +45,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && ($_POST["action"] ?? "") === "add_c
 }
 
 // Récupérer les statistiques du joueur
-$stmt = $gestion_sportive->prepare("
-    SELECT 
-        COUNT(*) as total_matchs,
-        SUM(CASE WHEN p.role = 'TITULAIRE' THEN 1 ELSE 0 END) as matchs_titulaire,
-        AVG(p.evaluation) as moyenne_evaluation,
-        COUNT(p.evaluation) as matchs_evalues
-    FROM participation p
-    INNER JOIN matchs m ON p.id_match = m.id_match
-    WHERE p.id_joueur = ? AND m.etat = 'JOUE'
-");
-$stmt->execute([$id_joueur]);
-$stats = $stmt->fetch(PDO::FETCH_ASSOC);
+$stats = getPlayerMatchStats($gestion_sportive, $id_joueur);
 
 $error = "";
 $success = "";
@@ -97,9 +80,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // Validation spécifique
     if (!empty($data["num_licence"]) && $data["num_licence"] !== strtoupper($joueur["num_licence"])) {
         // Vérifier si le numéro de licence existe déjà
-        $stmt = $gestion_sportive->prepare("SELECT id_joueur FROM joueur WHERE num_licence = ? AND id_joueur != ?");
-        $stmt->execute([$data["num_licence"], $id_joueur]);
-        if ($stmt->fetch()) {
+        if (isLicenseUsedByOtherPlayer($gestion_sportive, $data["num_licence"], $id_joueur)) {
             $errors[] = "Ce numéro de licence est déjà utilisé par un autre joueur.";
         }
     }

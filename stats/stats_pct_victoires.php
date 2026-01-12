@@ -4,17 +4,14 @@
 
 require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";
+require_once __DIR__ . "/../bdd/db_stats.php";
 
 include __DIR__ . "/../includes/header.php";
 
 /* =========================
    RÉCUPÉRATION DES JOUEURS
 ========================= */
-$joueurs = $gestion_sportive->query("
-    SELECT id_joueur, nom, prenom
-    FROM joueur
-    ORDER BY nom, prenom
-")->fetchAll(PDO::FETCH_ASSOC);
+$joueurs = getPlayersBasicList($gestion_sportive);
 ?>
 
 <h2>📊 % de matchs gagnés par joueur</h2>
@@ -42,20 +39,9 @@ $id = $j["id_joueur"];
 /* =========================
    MATCHS JOUÉS & GAGNÉS
 ========================= */
-$stmt = $gestion_sportive->prepare("
-    SELECT
-        COUNT(*) AS total,
-        SUM(m.resultat = 'VICTOIRE') AS victoires
-    FROM participation p
-    JOIN matchs m ON p.id_match = m.id_match
-    WHERE p.id_joueur = ?
-      AND m.resultat IS NOT NULL
-");
-$stmt->execute([$id]);
-$data = $stmt->fetch(PDO::FETCH_ASSOC);
-
-$total = $data["total"];
-$wins  = $data["victoires"];
+$data = getPlayerWinRateData($gestion_sportive, $id);
+$total = $data["total"] ?? 0;
+$wins  = $data["wins"] ?? 0;
 
 $pct = ($total > 0) ? round(($wins / $total) * 100, 1) : null;
 ?>

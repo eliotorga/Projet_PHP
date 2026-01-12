@@ -50,6 +50,30 @@ function getAllStatuts(PDO $db) {
     return $stmt->fetchAll();
 }
 
+// Compter les joueurs actifs
+function getActivePlayersCount(PDO $db): int {
+    $stmt = $db->prepare("
+        SELECT COUNT(*)
+        FROM joueur j
+        JOIN statut s ON s.id_statut = j.id_statut
+        WHERE s.code = 'ACT'
+    ");
+    $stmt->execute();
+    return (int)$stmt->fetchColumn();
+}
+
+// Compter les joueurs indisponibles (blessés/suspendus)
+function getUnavailablePlayersCount(PDO $db): int {
+    $stmt = $db->prepare("
+        SELECT COUNT(*)
+        FROM joueur j
+        JOIN statut s ON s.id_statut = j.id_statut
+        WHERE s.code IN ('BLE', 'SUS')
+    ");
+    $stmt->execute();
+    return (int)$stmt->fetchColumn();
+}
+
 // Récupérer uniquement les joueurs actifs
 function getActivePlayers(PDO $db) {
     $sql = "SELECT j.*, s.libelle AS statut_libelle
@@ -150,6 +174,21 @@ function getComments(PDO $db, int $id_joueur) {
     return $stmt->fetchAll();
 }
 
+// Récupérer les derniers commentaires d'un joueur (limite configurable)
+function getRecentComments(PDO $db, int $id_joueur, int $limit = 5): array {
+    $limit = max(1, (int)$limit);
+    $stmt = $db->prepare("
+        SELECT * FROM commentaire
+        WHERE id_joueur = ?
+        ORDER BY date_commentaire DESC
+        LIMIT ?
+    ");
+    $stmt->bindValue(1, $id_joueur, PDO::PARAM_INT);
+    $stmt->bindValue(2, $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 // Récupérer les joueurs avec stats (liste et suppression)
 function getPlayersWithStats(PDO $db): array {
     $sql = "
@@ -199,6 +238,17 @@ function getPlayerNameById(PDO $db, int $id_joueur): ?array {
     $stmt->execute([$id_joueur]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     return $row ?: null;
+}
+
+// Vérifier l'unicité du numéro de licence (hors joueur courant)
+function isLicenseUsedByOtherPlayer(PDO $db, string $num_licence, int $id_joueur): bool {
+    $stmt = $db->prepare("
+        SELECT COUNT(*)
+        FROM joueur
+        WHERE num_licence = ? AND id_joueur != ?
+    ");
+    $stmt->execute([$num_licence, $id_joueur]);
+    return (int)$stmt->fetchColumn() > 0;
 }
 
 // Supprimer un joueur et ses dependances

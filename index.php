@@ -4,6 +4,8 @@
 
 require_once "includes/auth_check.php";
 require_once "includes/config.php";
+require_once __DIR__ . "/bdd/db_joueur.php";
+require_once __DIR__ . "/bdd/db_stats.php";
 
 /* =====================
    DONNÉES DASHBOARD COMPLET
@@ -11,97 +13,29 @@ require_once "includes/config.php";
 
 /* STATISTIQUES PRINCIPALES */
 // Joueurs actifs
-$nbJoueursActifs = $gestion_sportive->query("
-    SELECT COUNT(*)
-    FROM joueur j
-    JOIN statut s ON s.id_statut = j.id_statut
-    WHERE s.code = 'ACT'
-")->fetchColumn();
+$nbJoueursActifs = getActivePlayersCount($gestion_sportive);
 
 // Matchs par statut
-$stats_matchs = $gestion_sportive->query("
-    SELECT 
-        SUM(CASE WHEN etat IN ('A_PREPARER', 'PREPARE') THEN 1 ELSE 0 END) as a_venir,
-        SUM(CASE WHEN etat = 'JOUE' THEN 1 ELSE 0 END) as joues,
-        COUNT(*) as total
-    FROM matchs
-")->fetch(PDO::FETCH_ASSOC);
+$stats_matchs = getMatchStatusCounts($gestion_sportive);
 
 // Statistiques de victoires
-$stats_victoires = $gestion_sportive->query("
-    SELECT 
-        SUM(CASE WHEN resultat = 'VICTOIRE' THEN 1 ELSE 0 END) as victoires,
-        SUM(CASE WHEN resultat = 'NUL' THEN 1 ELSE 0 END) as nuls,
-        SUM(CASE WHEN resultat = 'DEFAITE' THEN 1 ELSE 0 END) as defaites,
-        COUNT(*) as total
-    FROM matchs
-    WHERE resultat IS NOT NULL
-")->fetch(PDO::FETCH_ASSOC);
+$stats_victoires = getMatchResultCounts($gestion_sportive);
 
 // Performance moyenne des joueurs
-$performance_moyenne = $gestion_sportive->query("
-    SELECT ROUND(AVG(evaluation), 1) as moyenne
-    FROM participation
-    WHERE evaluation IS NOT NULL
-")->fetchColumn();
+$performance_moyenne = getAverageEvaluationValue($gestion_sportive);
+$performance_moyenne = $performance_moyenne !== null ? round($performance_moyenne, 1) : null;
 
 // Joueurs blessés/suspendus
-$joueurs_indisponibles = $gestion_sportive->query("
-    SELECT COUNT(*)
-    FROM joueur j
-    JOIN statut s ON s.id_statut = j.id_statut
-    WHERE s.code IN ('BLE', 'SUS')
-")->fetchColumn();
+$joueurs_indisponibles = getUnavailablePlayersCount($gestion_sportive);
 
 // Dernières activités
-$dernieres_activites = $gestion_sportive->query("
-    SELECT 
-        m.date_heure,
-        m.adversaire,
-        m.resultat,
-        m.lieu,
-        COUNT(p.id_joueur) as nb_participants
-    FROM matchs m
-    LEFT JOIN participation p ON p.id_match = m.id_match
-    WHERE m.etat = 'JOUE'
-    GROUP BY m.id_match
-    ORDER BY m.date_heure DESC
-    LIMIT 3
-")->fetchAll(PDO::FETCH_ASSOC);
+$dernieres_activites = getRecentMatchActivities($gestion_sportive, 3);
 
 /* PROCHAIN MATCH */
-$prochainMatch = $gestion_sportive->query("
-    SELECT 
-        m.id_match,
-        m.date_heure,
-        m.adversaire,
-        m.lieu,
-        COUNT(p.id_joueur) as nb_joueurs
-    FROM matchs m
-    LEFT JOIN participation p ON p.id_match = m.id_match
-    WHERE m.etat IN ('A_PREPARER', 'PREPARE')
-    GROUP BY m.id_match
-    ORDER BY m.date_heure ASC
-    LIMIT 1
-")->fetch(PDO::FETCH_ASSOC);
+$prochainMatch = getNextMatchSummary($gestion_sportive);
 
 /* DERNIER MATCH */
-$dernierMatch = $gestion_sportive->query("
-    SELECT 
-        m.id_match,
-        m.date_heure,
-        m.adversaire,
-        m.resultat,
-        m.score_equipe,
-        m.score_adverse,
-        ROUND(AVG(p.evaluation), 1) as moyenne_eval
-    FROM matchs m
-    LEFT JOIN participation p ON p.id_match = m.id_match
-    WHERE m.resultat IS NOT NULL
-    GROUP BY m.id_match
-    ORDER BY m.date_heure DESC
-    LIMIT 1
-")->fetch(PDO::FETCH_ASSOC);
+$dernierMatch = getLastPlayedMatchSummary($gestion_sportive);
 
 $css_version = @filemtime(__DIR__ . "/assets/css/index.css") ?: time();
 $theme_version = @filemtime(__DIR__ . "/assets/css/theme.css") ?: time();

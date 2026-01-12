@@ -4,6 +4,7 @@
 
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
+require_once __DIR__ . "/../bdd/db_participation.php";
 
 /* =============================
    VÉRIFICATION ID MATCH
@@ -18,18 +19,7 @@ $id_match = intval($_GET["id_match"]);
 /* =============================
    INFOS COMPLÈTES DU MATCH
 ============================= */
-$stmt = $gestion_sportive->prepare("
-    SELECT 
-        m.*,
-        COUNT(DISTINCT p.id_joueur) as nb_joueurs,
-        ROUND(AVG(p.evaluation), 1) as moyenne_eval
-    FROM matchs m
-    LEFT JOIN participation p ON p.id_match = m.id_match
-    WHERE m.id_match = ?
-    GROUP BY m.id_match
-");
-$stmt->execute([$id_match]);
-$match = $stmt->fetch(PDO::FETCH_ASSOC);
+$match = getMatchSummaryWithParticipants($gestion_sportive, $id_match);
 
 if (!$match) {
     die("<div class='error-container'><h2>⚽ Match introuvable</h2><p>Le match sélectionné n'existe pas.</p></div>");
@@ -38,29 +28,7 @@ if (!$match) {
 /* =============================
    RÉCUPÉRATION COMPOSITION COMPLÈTE
 ============================= */
-$stmt = $gestion_sportive->prepare("
-    SELECT 
-        j.id_joueur,
-        j.nom,
-        j.prenom,
-        j.num_licence,
-        p.evaluation,
-        p.role,
-        po.code AS poste_code,
-        po.libelle AS poste_libelle,
-        s.libelle AS statut
-    FROM participation p
-    JOIN joueur j ON j.id_joueur = p.id_joueur
-    JOIN poste po ON po.id_poste = p.id_poste
-    JOIN statut s ON s.id_statut = j.id_statut
-    WHERE p.id_match = ?
-    ORDER BY 
-        FIELD(p.role, 'TITULAIRE', 'REMPLACANT') DESC,
-        FIELD(po.code, 'GAR', 'DEF', 'MIL', 'ATT'),
-        j.nom
-");
-$stmt->execute([$id_match]);
-$participations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$participations = getMatchParticipationDetails($gestion_sportive, $id_match);
 
 // Séparation titulaires/remplaçants
 $titulaires = array_filter($participations, fn($p) => $p['role'] === 'TITULAIRE');
@@ -91,20 +59,7 @@ foreach ($participations as $p) {
 /* =============================
    STATISTIQUES DU MATCH
 ============================= */
-$stats = $gestion_sportive->prepare("
-    SELECT 
-        COUNT(*) as total_joueurs,
-        ROUND(AVG(evaluation), 1) as moyenne_generale,
-        MIN(evaluation) as note_min,
-        MAX(evaluation) as note_max,
-        SUM(CASE WHEN evaluation >= 4 THEN 1 ELSE 0 END) as excellent,
-        SUM(CASE WHEN evaluation = 3 THEN 1 ELSE 0 END) as moyen,
-        SUM(CASE WHEN evaluation <= 2 THEN 1 ELSE 0 END) as faible
-    FROM participation
-    WHERE id_match = ? AND evaluation IS NOT NULL
-");
-$stats->execute([$id_match]);
-$statistiques = $stats->fetch(PDO::FETCH_ASSOC);
+$statistiques = getMatchEvaluationStats($gestion_sportive, $id_match);
 
 include "../includes/header.php";
 ?>

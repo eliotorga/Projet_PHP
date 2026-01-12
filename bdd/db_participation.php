@@ -38,6 +38,84 @@ function getParticipationRolesByMatch(PDO $db, int $id_match): array {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+// Résumé d'un match avec participation (pour la feuille de match)
+function getMatchSummaryWithParticipants(PDO $db, int $id_match): ?array {
+    $stmt = $db->prepare("
+        SELECT 
+            m.id_match,
+            m.date_heure,
+            m.adversaire,
+            m.lieu,
+            m.resultat,
+            m.score_equipe,
+            m.score_adverse,
+            m.etat,
+            COUNT(DISTINCT p.id_joueur) as nb_joueurs,
+            ROUND(AVG(p.evaluation), 1) as moyenne_eval
+        FROM matchs m
+        LEFT JOIN participation p ON p.id_match = m.id_match
+        WHERE m.id_match = ?
+        GROUP BY m.id_match
+    ");
+    $stmt->execute([$id_match]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+// Détails des participations d'un match (titulaires/remplaçants)
+function getMatchParticipationDetails(PDO $db, int $id_match): array {
+    $stmt = $db->prepare("
+        SELECT 
+            j.id_joueur,
+            j.nom,
+            j.prenom,
+            j.num_licence,
+            p.evaluation,
+            p.role,
+            po.code AS poste_code,
+            po.libelle AS poste_libelle,
+            s.libelle AS statut
+        FROM participation p
+        JOIN joueur j ON j.id_joueur = p.id_joueur
+        JOIN poste po ON po.id_poste = p.id_poste
+        JOIN statut s ON s.id_statut = j.id_statut
+        WHERE p.id_match = ?
+        ORDER BY 
+            FIELD(p.role, 'TITULAIRE', 'REMPLACANT') DESC,
+            FIELD(po.code, 'GAR', 'DEF', 'MIL', 'ATT'),
+            j.nom
+    ");
+    $stmt->execute([$id_match]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Statistiques d'évaluations d'un match
+function getMatchEvaluationStats(PDO $db, int $id_match): array {
+    $stmt = $db->prepare("
+        SELECT 
+            COUNT(*) as total_joueurs,
+            ROUND(AVG(evaluation), 1) as moyenne_generale,
+            MIN(evaluation) as note_min,
+            MAX(evaluation) as note_max,
+            SUM(CASE WHEN evaluation >= 4 THEN 1 ELSE 0 END) as excellent,
+            SUM(CASE WHEN evaluation = 3 THEN 1 ELSE 0 END) as moyen,
+            SUM(CASE WHEN evaluation <= 2 THEN 1 ELSE 0 END) as faible
+        FROM participation
+        WHERE id_match = ? AND evaluation IS NOT NULL
+    ");
+    $stmt->execute([$id_match]);
+    return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+}
+
+// Compter les participations d'un match
+function getParticipationCountForMatch(PDO $db, int $id_match): int {
+    $stmt = $db->prepare("
+        SELECT COUNT(*) FROM participation WHERE id_match = ?
+    ");
+    $stmt->execute([$id_match]);
+    return (int)$stmt->fetchColumn();
+}
+
 // Statistiques synthétiques d'un joueur sur les matchs joués
 function getPlayerMatchStats(PDO $db, int $id_joueur): array {
     $stmt = $db->prepare("
