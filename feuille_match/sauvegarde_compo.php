@@ -37,7 +37,6 @@ if ($nb_eval > 0) {
     die("<div class='error-message'>Erreur : Des évaluations existent déjà pour ce match, la composition ne peut plus être modifiée.<br><a href='../matchs/liste_matchs.php'>Retour</a></div>");
 }
 
-/* ================= VALIDATION SERVEUR ================= */
 $nbJoueurs = 0;
 $hasGK = false;
 $assignedPlayers = []; // Pour éviter les doublons
