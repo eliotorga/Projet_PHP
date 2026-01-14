@@ -65,8 +65,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // Validation
     $errors = [];
     
-    if (empty($data["nom"])) $errors[] = "Le nom est requis.";
-    if (empty($data["prenom"])) $errors[] = "Le prénom est requis.";
+    if (empty($data["nom"])) {
+        $errors[] = "Le nom est requis.";
+    } elseif (!preg_match('/^[A-Za-zÀ-ÖØ-öø-ÿ\-\' ]+$/u', $data["nom"])) {
+        $errors[] = "Le nom ne doit contenir que des lettres, espaces ou tirets.";
+    }
+    if (empty($data["prenom"])) {
+        $errors[] = "Le prénom est requis.";
+    } elseif (!preg_match('/^[A-Za-zÀ-ÖØ-öø-ÿ\-\' ]+$/u', $data["prenom"])) {
+        $errors[] = "Le prénom ne doit contenir que des lettres, espaces ou tirets.";
+    }
     if (empty($data["num_licence"])) $errors[] = "Le numéro de licence est requis.";
     if (empty($data["date_naissance"])) $errors[] = "La date de naissance est requise.";
     if ($data["taille_cm"] === null) $errors[] = "La taille est requise.";
@@ -170,12 +178,14 @@ include __DIR__ . "/../includes/header.php";
                         <div class="form-group">
                             <label for="nom" class="form-label required">Nom</label>
                             <input type="text" 
-                                   id="nom" 
-                                   name="nom" 
-                                   class="form-control" 
-                                   value="<?= htmlspecialchars($joueur['nom']) ?>" 
-                                   required
-                                   maxlength="50">
+                                id="nom" 
+                                name="nom" 
+                                class="form-control" 
+                                value="<?= htmlspecialchars($joueur['nom']) ?>" 
+                                required
+                                maxlength="50"
+                                pattern="[A-Za-zÀ-ÖØ-öø-ÿ\-\' ]{2,50}"
+                                title="Lettres, espaces ou tirets uniquement">
                             <div class="form-help">
                                 <i class="fas fa-info-circle"></i>
                                 Maximum 50 caractères
@@ -185,12 +195,14 @@ include __DIR__ . "/../includes/header.php";
                         <div class="form-group">
                             <label for="prenom" class="form-label required">Prénom</label>
                             <input type="text" 
-                                   id="prenom" 
-                                   name="prenom" 
-                                   class="form-control" 
-                                   value="<?= htmlspecialchars($joueur['prenom']) ?>" 
-                                   required
-                                   maxlength="50">
+                                id="prenom" 
+                                name="prenom" 
+                                class="form-control" 
+                                value="<?= htmlspecialchars($joueur['prenom']) ?>" 
+                                required
+                                maxlength="50"
+                                pattern="[A-Za-zÀ-ÖØ-öø-ÿ\-\' ]{2,50}"
+                                title="Lettres, espaces ou tirets uniquement">
                         </div>
                         
                         <div class="form-group">
