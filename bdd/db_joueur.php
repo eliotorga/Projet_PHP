@@ -5,10 +5,6 @@
 
 require_once __DIR__ . "/../includes/config.php";
 
-/****************************************
- * 1) RÉCUPÉRATIONS DE BASE
- ****************************************/
-
 // Récupérer tous les joueurs
 function getAllPlayers(PDO $db) {
     $sql = "SELECT j.*, s.libelle AS statut_libelle
