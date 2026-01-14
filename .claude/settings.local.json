@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(xargs sed -i '' 's|/vue/|/controller/|g')",
+      "Bash(xargs sed:*)"
     ]
   }
 }

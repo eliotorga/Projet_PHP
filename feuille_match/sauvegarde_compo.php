@@ -1,10 +1,11 @@
 <?php
-// traite et enregistre la composition d'equipe selectionnee
+// Controller: traite et enregistre la composition d'equipe selectionnee
 // valide les titulaires et remplacants puis met a jour la base de donnees
+// (pas de vue - traitement POST uniquement avec redirection)
 
 require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";
-require_once __DIR__ . "/../bdd/db_participation.php";
+require_once __DIR__ . "/../modele/participation.php";
 
 $id_match = intval($_POST["id_match"] ?? 0);
 $titulaires = $_POST["titulaire"] ?? [];

@@ -4,8 +4,8 @@
 
 require_once "includes/auth_check.php";
 require_once "includes/config.php";
-require_once __DIR__ . "/bdd/db_joueur.php";
-require_once __DIR__ . "/bdd/db_stats.php";
+require_once __DIR__ . "/modele/joueur.php";
+require_once __DIR__ . "/modele/stats.php";
 
 /* =====================
    DONNÉES DASHBOARD COMPLET

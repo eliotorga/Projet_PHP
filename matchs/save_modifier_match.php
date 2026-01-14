@@ -5,7 +5,7 @@
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
 
-require_once "../bdd/db_match.php";
+require_once "../modele/match.php";
 
 if (!isset($_POST["id_match"])) {
     header("Location: liste_matchs.php");

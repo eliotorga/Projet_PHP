@@ -4,7 +4,7 @@
 
 require_once __DIR__ . "/../includes/auth_check.php";
 require_once __DIR__ . "/../includes/config.php";
-require_once __DIR__ . "/../bdd/db_match.php";
+require_once __DIR__ . "/../modele/match.php";
 
 include __DIR__ . "/../includes/header.php";
 
