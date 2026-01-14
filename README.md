@@ -30,13 +30,6 @@ https://github.com/eliotorga/Projet_PHP.git
 - Performance moyenne des joueurs
 - Historique des matchs
 - Analyse des résultats
-
-
-### Modification des identifiants
-Éditez le fichier `includes/config.php` :
-```php
-$AUTH_LOGIN = "votre_identifiant";
-$AUTH_PASSWORD_HASH = '$2y$12$...'; // bcrypt (ex: htpasswd -nbBC 12 admin "motdepasse")
 ```
 
 ### Configuration de la base de données
