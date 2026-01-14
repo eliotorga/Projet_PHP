@@ -141,7 +141,7 @@
                                         <?php endfor; ?>
                                     </div>
                                     <div style="font-size: 0.85rem; color: var(--gray); margin-top: 3px;">
-                                        <?= number_format($j['moyenne_notes'], 1) ?>/6
+                                        <?= number_format($j['moyenne_notes'], 1) ?>/5
                                     </div>
                                 <?php else: ?>
                                     <span style="opacity: 0.6;">—</span>
