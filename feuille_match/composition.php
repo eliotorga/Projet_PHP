@@ -10,9 +10,6 @@ require_once __DIR__ . "/../bdd/db_joueur.php";
 require_once __DIR__ . "/../bdd/db_poste.php";
 require_once __DIR__ . "/../bdd/db_participation.php";
 
-/* =============================
-   VÉRIFICATION MATCH
-============================= */
 if (!isset($_GET["id_match"])) {
     header("Location: ../matchs/liste_matchs.php?error=no_match");
     exit();
@@ -20,9 +17,6 @@ if (!isset($_GET["id_match"])) {
 
 $id_match = intval($_GET["id_match"]);
 
-/* =============================
-   INFOS MATCH
-============================= */
 $match = getMatchById($gestion_sportive, $id_match);
 
 if (!$match) {
@@ -37,9 +31,6 @@ if ($dateMatchObj <= $nowDt || $match['etat'] === 'JOUE') {
 }
 
 
-/* =============================
-   JOUEURS ACTIFS AVEC LEUR NUMÉRO DE LICENCE
-============================= */
 $joueurs = getActivePlayersDetailed($gestion_sportive);
 
 $commentaire_histories = [];
@@ -49,16 +40,10 @@ foreach ($joueurs as $j) {
     $evaluation_histories[$j['id_joueur']] = getEvaluationHistory($gestion_sportive, (int)$j['id_joueur'], 3);
 }
 
-/* =============================
-   POSTES AVEC ORDRE D'AFFICHAGE
-============================= */
 $postes = getAllPostesById($gestion_sportive);
 
 $bench_slots = array_values(array_filter($postes, fn($p) => ($p['code'] ?? '') !== 'REM'));
 
-/* =============================
-   VÉRIFIER LES PARTICIPATIONS EXISTANTES
-============================= */
 $participations_existantes = getParticipationRolesByMatch($gestion_sportive, $id_match);
 
 if (session_status() === PHP_SESSION_NONE) {
