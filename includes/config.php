@@ -20,7 +20,6 @@ $DB_NAME = "gestion_equipe";
 $DB_USER = "root";
 $DB_PASS = "";
 
-I
 try {
     $gestion_sportive = new PDO(
         "mysql:host={$DB_HOST};dbname={$DB_NAME};charset=utf8",
