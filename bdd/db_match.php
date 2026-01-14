@@ -5,9 +5,6 @@
 
 require_once __DIR__ . "/../includes/config.php";
 
-/****************************************
- * 1) RÉCUPÉRATION DES MATCHS
- ****************************************/
 
 // Tous les matchs
 function getAllMatches(PDO $db) {
