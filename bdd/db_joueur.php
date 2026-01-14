@@ -97,11 +97,6 @@ function getActivePlayersDetailed(PDO $db): array {
     return $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 }
 
-
-/****************************************
- * 2) AJOUT / MODIFICATION / SUPPRESSION
- ****************************************/
-
 // Ajouter un joueur
 function insertPlayer(PDO $db, array $data) {
     $sql = "INSERT INTO joueur (nom, prenom, num_licence, date_naissance, taille_cm, poids_kg, id_statut)
@@ -151,10 +146,6 @@ function deletePlayer(PDO $db, int $id) {
 }
 
 
-
-/****************************************
- * 3) COMMENTAIRES SUR JOUEURS
- ****************************************/
 
 // Ajouter un commentaire sur un joueur
 function addComment(PDO $db, int $id_joueur, string $texte) {
