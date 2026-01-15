@@ -1,6 +1,6 @@
+<?php
 include "../includes/header.php";
 ?>
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
