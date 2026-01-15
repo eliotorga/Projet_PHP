@@ -364,11 +364,7 @@ include "includes/header.php";
         </div>
     </div>
 
-    <?php if ($prochainMatch && (strtotime($prochainMatch['date_heure']) - time()) < 86400): ?>
-        <div class="toast-warning">
-            <i class="fas fa-exclamation-triangle"></i>
-        </div>
-    <?php endif; ?>
+    <!-- Toast supprimé : notification de rappel de match retirée -->
 </body>
 </html>
 <?php include "includes/footer.php"; ?>
