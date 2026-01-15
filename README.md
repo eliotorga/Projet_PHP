@@ -32,14 +32,6 @@ https://github.com/eliotorga/Projet_PHP.git
 - Analyse des résultats
 ```
 
-### Configuration de la base de données
-Dans le même fichier `includes/config.php` :
-```php
-$DB_HOST = "localhost";
-$DB_NAME = "gestion_equipe";
-$DB_USER = "root";
-$DB_PASS = "";
-```
 
 ## Sécurité
 
