@@ -64,10 +64,7 @@ include "includes/header.php";
                     <p>Pilotez votre équipe avec précision : matchs, joueurs, performances et statistiques en temps réel.</p>
                     <div class="hero-actions">
                         <?php if ($prochainMatch): ?>
-                            <a class="btn-hero" href="feuille_match/composition.php?id_match=<?= $prochainMatch["id_match"] ?>">
-                                <i class="fas fa-futbol"></i> Composer l'équipe
-                            </a>
-                            <a class="btn-hero btn-ghost" href="matchs/liste_matchs.php">
+                            <a class="btn-hero" href="matchs/liste_matchs.php">
                                 <i class="fas fa-calendar-alt"></i> Voir le calendrier
                             </a>
                         <?php else: ?>
