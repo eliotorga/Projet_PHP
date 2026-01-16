@@ -202,11 +202,13 @@
                                 <i class="fas fa-edit"></i> Modifier
                             </a>
 
-                            <a href="supprimer_joueur.php?id=<?= $joueur['id_joueur'] ?>"
-                               class="btn-action btn-delete"
-                               onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce joueur ?');">
-                                <i class="fas fa-trash"></i> Supprimer
-                            </a>
+                            <?php if (($joueur['nb_matchs'] ?? 0) === 0): ?>
+                                <a href="liste_joueurs.php?action=supprimer&id=<?= $joueur['id_joueur'] ?>"
+                                   class="btn-action btn-delete"
+                                   onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce joueur ?');">
+                                    <i class="fas fa-trash"></i> Supprimer
+                                </a>
+                            <?php endif; ?>
                         </div>
                     </div>
                 <?php endforeach; ?>

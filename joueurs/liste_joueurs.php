@@ -6,6 +6,33 @@ require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
 require_once "../modele/joueur.php";
 
+// GESTION DE LA SUPPRESSION DIRECTE
+if (isset($_GET['action']) && $_GET['action'] === 'supprimer' && isset($_GET['id'])) {
+    $id_joueur = intval($_GET['id']);
+    $joueur_info = getPlayerNameById($gestion_sportive, $id_joueur);
+    
+    if (!$joueur_info) {
+        $_SESSION['error_message'] = "Joueur introuvable.";
+    } else {
+        $nb_participations = getNbParticipations($gestion_sportive, $id_joueur);
+        if ($nb_participations === 0) {
+            try {
+                $gestion_sportive->beginTransaction();
+                deletePlayerCascade($gestion_sportive, $id_joueur);
+                $gestion_sportive->commit();
+
+                $_SESSION['success_message'] = "Joueur supprimé avec succès.";
+            } catch (Exception $e) {
+                $gestion_sportive->rollBack();
+                $_SESSION['error_message'] = "Erreur lors de la suppression : " . $e->getMessage();
+            }
+        } else {
+            $_SESSION['error_message'] = "Impossible de supprimer un joueur qui a déjà participé à un match.";
+        }
+    }
+    header("Location: liste_joueurs.php");
+    exit;
+}
 
   // RÉCUPÉRATION JOUEURS AVEC STATISTIQUES
 
