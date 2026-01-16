@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     <!-- Lien vers votre fichier CSS -->
     <link rel="stylesheet" href="../assets/css/stats.css">
-    <link rel="stylesheet" href="/Projet_PHP/assets/css/theme.css">
+    <link rel="stylesheet" href="/assets/css/theme.css">
 </head>
 <body>
     <div class="page-container">

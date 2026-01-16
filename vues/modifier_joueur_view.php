@@ -7,8 +7,8 @@
     <title>Modifier le Joueur - <?= htmlspecialchars($joueur['prenom'] . ' ' . $joueur['nom']) ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/Projet_PHP/assets/css/modifier_joueur.css">
-    <link rel="stylesheet" href="/Projet_PHP/assets/css/theme.css">
+    <link rel="stylesheet" href="/assets/css/modifier_joueur.css">
+    <link rel="stylesheet" href="/assets/css/theme.css">
 </head>
 <body>
     <div class="container">

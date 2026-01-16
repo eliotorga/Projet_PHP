@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="../assets/css/feuille_match.css">
     <link rel="stylesheet" href="../assets/css/resultats.css">
     <link rel="stylesheet" href="../assets/css/voir_composition.css">
-    <link rel="stylesheet" href="/Projet_PHP/assets/css/theme.css">
+    <link rel="stylesheet" href="/assets/css/theme.css">
 </head>
 <body>
     <div class="page-container">

@@ -47,14 +47,16 @@ include "includes/header.php";
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tableau de Bord - Gestion Équipe</title>
+    <title>Gestion Équipe</title>
+
+    <link rel="stylesheet" href="/assets/css/theme.css">
+    <link rel="stylesheet" href="/assets/css/index.css">
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/Projet_PHP/assets/css/index.css?v=<?= $css_version ?>">
-    <link rel="stylesheet" href="/Projet_PHP/assets/css/theme.css?v=<?= $theme_version ?>">
 </head>
 <body>
+
     <div class="dashboard-container">
         <!-- HERO SECTION -->
         <div class="hero-section">

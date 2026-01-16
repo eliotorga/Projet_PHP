@@ -13,6 +13,7 @@ if (isset($_SESSION["user_id"])) {
     exit;
 }
 
+
 // Traitement du formulaire
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $login = trim($_POST["login"] ?? "");

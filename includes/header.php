@@ -10,8 +10,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- Fichiers CSS globaux -->
-    <link rel="stylesheet" href="/Projet_PHP/assets/css/global.css">
-    <link rel="stylesheet" href="/Projet_PHP/assets/css/header.css">
+    <link rel="stylesheet" href="/assets/css/global.css">
+    <link rel="stylesheet" href="/assets/css/header.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
@@ -30,16 +30,16 @@
 
     <!-- MENU -->
     <nav>
-        <a href="/Projet_PHP/index.php">
+        <a href="/index.php">
             🏠 <span>Accueil</span>
         </a>
-        <a href="/Projet_PHP/joueurs/liste_joueurs.php">
+        <a href="/joueurs/liste_joueurs.php">
             👥 <span>Joueurs</span>
         </a>
-        <a href="/Projet_PHP/matchs/liste_matchs.php">
+        <a href="/matchs/liste_matchs.php">
             📅 <span>Matchs</span>
         </a>
-        <a href="/Projet_PHP/stats/stats_equipe.php">
+        <a href="/stats/stats_equipe.php">
             📊 <span>Statistiques</span>
         </a>
     </nav>
@@ -50,7 +50,7 @@
             👤 Entraîneur<br>
             <strong>Connecté</strong>
         </div>
-        <a href="/Projet_PHP/logout.php" class="logout">
+        <a href="/logout.php" class="logout">
             🚪 Déconnexion
         </a>
     </div>

@@ -15,10 +15,10 @@ $AUTH_LOGIN = "admin";  // Nom d'utilisateur
 $AUTH_PASSWORD_HASH = '$2y$12$rPJltJboyCt8h9q33Y0Olee7NheJZkO3Cw7y/T7w3ii7uL8FkTFwm';
 
 
-$DB_HOST = "localhost";
-$DB_NAME = "gestion_equipe";
-$DB_USER = "root";
-$DB_PASS = "";
+$DB_HOST = "mysql-william1234.alwaysdata.net";
+$DB_NAME = "william1234_bdd";
+$DB_USER = "william1234";
+$DB_PASS = "!@sXLE8WgRX@87S";
 
 try {
     $gestion_sportive = new PDO(

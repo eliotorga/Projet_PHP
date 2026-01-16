@@ -7,10 +7,10 @@
     <title>Évaluation des Joueurs - <?= htmlspecialchars($match['adversaire']) ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/Projet_PHP/assets/css/feuille_match.css">
-    <link rel="stylesheet" href="/Projet_PHP/assets/css/resultats.css">
-    <link rel="stylesheet" href="/Projet_PHP/assets/css/evaluation.css">
-    <link rel="stylesheet" href="/Projet_PHP/assets/css/theme.css">
+    <link rel="stylesheet" href="/assets/css/feuille_match.css">
+    <link rel="stylesheet" href="/assets/css/resultats.css">
+    <link rel="stylesheet" href="/assets/css/evaluation.css">
+    <link rel="stylesheet" href="/assets/css/theme.css">
 </head>
 <body>
     <div class="container">
