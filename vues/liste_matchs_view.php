@@ -21,9 +21,6 @@
             <a href="ajouter_match.php" class="btn-add-match">
                 <i class="fas fa-plus-circle"></i> Nouveau Match
             </a>
-            <a href="supprimer_match.php" class="btn-add-match" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
-                <i class="fas fa-trash-alt"></i> Supprimer plusieurs
-            </a>
         </div>
 
         <!-- FILTRES -->
@@ -242,9 +239,11 @@
                             </a>
                         <?php endif; ?>
 
-                        <a href="supprimer_match.php?id=<?= $m['id_match'] ?>" class="btn-action btn-delete">
-                            <i class="fas fa-trash"></i> Supprimer
-                        </a>
+                        <?php if ($matchAVenir): ?>
+                            <a href="liste_matchs.php?action=supprimer&id=<?= $m['id_match'] ?>" class="btn-action btn-delete" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce match ?')">
+                                <i class="fas fa-trash"></i> Supprimer
+                            </a>
+                        <?php endif; ?>
                     </div>
                 </div>
             <?php endforeach; ?>

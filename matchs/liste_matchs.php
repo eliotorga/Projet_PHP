@@ -5,7 +5,36 @@
 require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
 require_once "../modele/match.php";
+require_once "../modele/participation.php";
 
+// GESTION DE LA SUPPRESSION DIRECTE
+if (isset($_GET['action']) && $_GET['action'] === 'supprimer' && isset($_GET['id'])) {
+    $id_match = intval($_GET['id']);
+    $match_info = getMatchBasicInfo($gestion_sportive, $id_match);
+    
+    if (!$match_info) {
+        $_SESSION['error_message'] = "Match introuvable.";
+    } else {
+        $match_ts = strtotime($match_info['date_heure']);
+        if ($match_ts > time()) {
+            try {
+                $gestion_sportive->beginTransaction();
+                clearParticipation($gestion_sportive, $id_match);
+                deleteMatch($gestion_sportive, $id_match);
+                $gestion_sportive->commit();
+
+                $_SESSION['success_message'] = "Match supprimé avec succès.";
+            } catch (Exception $e) {
+                $gestion_sportive->rollBack();
+                $_SESSION['error_message'] = "Erreur lors de la suppression : " . $e->getMessage();
+            }
+        } else {
+            $_SESSION['error_message'] = "Impossible de supprimer un match déjà eu lieu ou en cours.";
+        }
+    }
+    header("Location: liste_matchs.php");
+    exit;
+}
 
    //RÉCUPÉRATION DES MATCHS AVEC STATISTIQUES ET FILTRES
 
