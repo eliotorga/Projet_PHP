@@ -6,9 +6,9 @@ require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
 require_once "../modele/joueur.php";
 
-/* ==========================
-   RÉCUPÉRATION JOUEURS AVEC STATISTIQUES
-========================== */
+
+  // RÉCUPÉRATION JOUEURS AVEC STATISTIQUES
+
 $joueurs = getPlayersWithStats($gestion_sportive);
 
 // Calcul de l'âge pour chaque joueur

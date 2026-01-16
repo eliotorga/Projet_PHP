@@ -7,9 +7,9 @@ require_once __DIR__ . "/../includes/config.php";
 require_once __DIR__ . "/../modele/stats.php";
 include __DIR__ . "/../includes/header.php";
 
-/* =======================
-   FONCTIONS UTILITAIRES
-======================= */
+
+  // FONCTIONS UTILITAIRES
+
 function pct($v, $t) {
     return $t > 0 ? round(($v / $t) * 100, 1) : 0;
 }
@@ -23,9 +23,9 @@ function statutClass($statut) {
     };
 }
 
-/* =======================
-   STATS ÉQUIPE
-======================= */
+
+ // STATS ÉQUIPE
+
 $totalMatchs = getPlayedMatchesCount($gestion_sportive);
 $res = getResultsCountMap($gestion_sportive);
 
@@ -36,14 +36,14 @@ $nuls      = $res["NUL"] ?? 0;
 // Matchs joues (ordre decroissant) pour les selections consecutives
 $matchsJoues = getPlayedMatchIds($gestion_sportive);
 
-/* =======================
-   LISTE DES JOUEURS & STATS
-======================= */
+
+  // LISTE DES JOUEURS & STATS
+
 $joueurs = getPlayersBasicWithStatus($gestion_sportive);
 
-/* =======================
-   CALCUL DES STATS (PHP)
-======================= */
+
+ //  CALCUL DES STATS (PHP)
+
 $statsData = [];
 
 foreach ($joueurs as $j) {
@@ -118,7 +118,6 @@ if ($filtreStatut || $recherche) {
 ======================= */
 $sort = $_GET['sort'] ?? 'nom';
 $order = $_GET['order'] ?? 'asc';
-$nextOrder = $order === 'asc' ? 'desc' : 'asc';
 
 usort($statsData, function($a, $b) use ($sort, $order) {
     $valA = $a[$sort] ?? $a['nom'];

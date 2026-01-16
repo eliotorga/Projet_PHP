@@ -6,9 +6,9 @@ require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
 require_once __DIR__ . "/../modele/participation.php";
 
-/* =============================
-   VÉRIFICATION ID MATCH
-============================= */
+
+  // VÉRIFICATION ID MATCH
+
 if (!isset($_GET["id_match"])) {
     header("Location: ../matchs/liste_matchs.php?error=no_match");
     exit();

@@ -1,5 +1,5 @@
 <?php
-// fonctions pour gerer les statuts des joueurs (actif, blesse, suspendu)
+//  fonctions pour gerer les statuts des joueurs (actif, blesse, suspendu)
 // operations crud sur la table statut
 
 function getAllStatuts(PDO $db) {

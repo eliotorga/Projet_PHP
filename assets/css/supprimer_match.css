@@ -36,9 +36,9 @@ body {
     padding: 30px 20px;
 }
 
-/* =============================
+/* =============
    HEADER
-============================= */
+============= */
 .page-header {
     background: linear-gradient(135deg, var(--danger), var(--danger-dark));
     border-radius: var(--radius);

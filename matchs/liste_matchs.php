@@ -6,9 +6,9 @@ require_once "../includes/auth_check.php";
 require_once "../includes/config.php";
 require_once "../modele/match.php";
 
-/* =====================
-   RÉCUPÉRATION DES MATCHS AVEC STATISTIQUES ET FILTRES
-===================== */
+
+   //RÉCUPÉRATION DES MATCHS AVEC STATISTIQUES ET FILTRES
+
 
 // Récupération des filtres
 $filterEtat = $_GET['etat'] ?? 'all';

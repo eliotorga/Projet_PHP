@@ -262,9 +262,9 @@ function getPlayersByIds(PDO $db, array $ids): array {
 
 
 
-/****************************************
- * 4) STATS LÉGÈRES (UTILISÉ POUR PRÉ-VISUALISATION)
- ****************************************/
+
+ // 4) STATS LÉGÈRES (UTILISÉ POUR PRÉ-VISUALISATION)
+
 
 // Récupérer le nombre de sélections (participation)
 function getNbParticipations(PDO $db, int $id_joueur) {

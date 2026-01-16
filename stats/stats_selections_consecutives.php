@@ -16,10 +16,10 @@ $joueurs = $gestion_sportive->query("
     ORDER BY nom, prenom
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-/* =========================
-   RÉCUPÉRATION DES MATCHS JOUÉS
-   (triés du plus récent au plus ancien)
-========================= */
+
+  //RÉCUPÉRATION DES MATCHS JOUÉS
+  // (triés du plus récent au plus ancien)
+
 $matchs = $gestion_sportive->query("
     SELECT id_match
     FROM matchs

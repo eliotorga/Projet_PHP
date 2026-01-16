@@ -5,7 +5,7 @@
 
 
 /**************************************************************
- * 1️⃣ Récupérer la participation d’un match
+ * 1️ Récupérer la participation d’un match
  **************************************************************/
 function getParticipationByMatch(PDO $db, int $id_match) {
 
@@ -209,7 +209,7 @@ function getMatchParticipantsForEvaluation(PDO $db, int $id_match): array {
 
 
 /**************************************************************
- * 2️⃣ Ajouter une participation
+ * 2️ Ajouter une participation
  **************************************************************/
 function addParticipation(PDO $db, array $data) {
 
@@ -231,7 +231,7 @@ function addParticipation(PDO $db, array $data) {
 
 
 /**************************************************************
- * 3️⃣ Effacer toute la compo d’un match
+ * 3️ Effacer toute la compo d’un match
  **************************************************************/
 function clearParticipation(PDO $db, int $id_match) {
     $stmt = $db->prepare("DELETE FROM participation WHERE id_match = ?");
@@ -240,7 +240,7 @@ function clearParticipation(PDO $db, int $id_match) {
 
 
 /**************************************************************
- * 4️⃣ Mettre à jour une évaluation
+ * 4️ Mettre à jour une évaluation
  **************************************************************/
 function updateEvaluation(PDO $db, int $id_match, int $id_joueur, ?int $note) {
 
@@ -261,7 +261,7 @@ function updateEvaluation(PDO $db, int $id_match, int $id_joueur, ?int $note) {
 
 
 /**************************************************************
- * 5️⃣ Nombre de titularisations
+ * 5️ Nombre de titularisations
  **************************************************************/
 function getNbTitularisations(PDO $db, int $id_joueur) {
     $stmt = $db->prepare("
@@ -275,7 +275,7 @@ function getNbTitularisations(PDO $db, int $id_joueur) {
 
 
 /**************************************************************
- * 6️⃣ Nombre de remplacements
+ * 6️ Nombre de remplacements
  **************************************************************/
 function getNbRemplacements(PDO $db, int $id_joueur) {
     $stmt = $db->prepare("
@@ -289,7 +289,7 @@ function getNbRemplacements(PDO $db, int $id_joueur) {
 
 
 /**************************************************************
- * 7️⃣ Moyenne des évaluations
+ * 7️ Moyenne des évaluations
  **************************************************************/
 function getAvgNote(PDO $db, int $id_joueur) {
     $stmt = $db->prepare("
@@ -303,7 +303,7 @@ function getAvgNote(PDO $db, int $id_joueur) {
 
 
 /**************************************************************
- * 8️⃣ Poste préféré (meilleure moyenne en TITU)
+ * 8️ Poste préféré (meilleure moyenne en TITU)
  **************************************************************/
 function getBestPoste(PDO $db, int $id_joueur) {
 
@@ -326,7 +326,7 @@ function getBestPoste(PDO $db, int $id_joueur) {
 
 
 /**************************************************************
- * 9️⃣ Série de matchs consécutifs
+ * 9️ Série de matchs consécutifs
  **************************************************************/
 function getSerieConsecutive(PDO $db, int $id_joueur) {
 
@@ -354,9 +354,9 @@ function getSerieConsecutive(PDO $db, int $id_joueur) {
 }
 
 
-/**************************************************************
- * 🔟 Pourcentage de victoires sur matchs joués
- **************************************************************/
+
+ //Pourcentage de victoires sur matchs joués
+ 
 function getWinRate(PDO $db, int $id_joueur) {
 
     $sql = "
