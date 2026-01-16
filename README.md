@@ -3,7 +3,7 @@
 Application web de gestion d'équipe sportive développée en PHP pour gérer les joueurs, les matchs et les statistiques.
 
 ### URL d'accès
-ult du site : https://william1234.alwaysdata.net/login.php
+url du site : https://william1234.alwaysdata.net/login.php
 ```
 https://github.com/eliotorga/Projet_PHP.git
 
