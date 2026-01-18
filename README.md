@@ -42,6 +42,5 @@ https://github.com/eliotorga/Projet_PHP.git
 
 ## Notes importantes
 
-- Les identifiants sont configurés directement dans le code (exigence du projet)
+- Les identifiants sont configurés directement dans le code
 - L'application utilise PDO pour une connexion sécurisée à la base de données
-- Le système de session inclut des protections de base contre le détournement de session
