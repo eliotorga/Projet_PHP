@@ -31,7 +31,6 @@ url du repo : https://github.com/eliotorga/Projet_PHP.git
 - Performance moyenne des joueurs
 - Historique des matchs
 - Analyse des résultats
-```
 
 
 ## Sécurité
