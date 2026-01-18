@@ -5,7 +5,7 @@ Application web de gestion d'équipe sportive développée en PHP pour gérer le
 ### URL d'accès
 url du site : https://william1234.alwaysdata.net/login.php
 ```
-https://github.com/eliotorga/Projet_PHP.git
+url du repo : https://github.com/eliotorga/Projet_PHP.git
 
 ```
 
